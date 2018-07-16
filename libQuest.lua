@@ -3,7 +3,8 @@ libQuest = {
 	Author = "Ek1",
 	Description = "Libary for other add-on's to get quest data and to have an hook for questId's.",
 	Version = "18.07.17",
-	License = "BY-SA = Creative Commons Attribution-ShareAlike 4.0 International License"
+	License = "BY-SA = Creative Commons Attribution-ShareAlike 4.0 International License",
+	www = "https://github.com/Ek1/libQuest"
 }
 local ADDON_NAME = "libQuest"
 local sharable_quests = {}
