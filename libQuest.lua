@@ -28,7 +28,7 @@ EVENT_QUEST_REMOVED		Questi poistuu journalIndex taulusta ja kerätty data tuupa
 ]]
 
 -- Another player sharing a quest
---	EVENT_QUEST_SHARED (number eventCode, number questId)
+-- API 100026	EVENT_QUEST_SHARED (number eventCode, number questId)
 function libQuest.EVENT_QUEST_SHARED (_, sharedQuestId)
 	d( libQuest.Title .. ":EVENT_QUEST_SHARED questID:" .. sharedQuestId )
 	local sharedQuestName, characterName, _, displayName = GetOfferedQuestShareInfo (sharedQuestId)
@@ -40,7 +40,7 @@ function libQuest.EVENT_QUEST_SHARED (_, sharedQuestId)
 --	incompleteQuestData[1].[2] = sharedQuestName
 end
 
---	EVENT_QUEST_ADDED(eventCode, addedToJournalIndex, addedQuestName, objectiveName)
+-- API 100026	EVENT_QUEST_ADDED (number eventCode, number journalIndex, string questName, string objectiveName)
 function libQuest.EVENT_QUEST_ADDED(_, addedToJournalIndex, addedQuestName, objectiveName)
 	d( libQuest.Title .. ":EVENT_QUEST_ADDED " .. addedQuestName .. "  objectiveName:" .. objectiveName .. " to jouranlIndex " ..  addedToJournalIndex)
 
@@ -73,7 +73,7 @@ end
 
 	
 -- Quest advancing, more info gained and most importantly ZONE info gained
--- EVENT_QUEST_ADVANCED (number eventCode, number journalIndex, string questName, boolean isPushed, boolean isComplete, boolean mainStepChanged)
+-- API 100026	EVENT_QUEST_ADVANCED (number eventCode, number journalIndex, string questName, boolean isPushed, boolean isComplete, boolean mainStepChanged)
 function libQuest.EVENT_QUEST_ADVANCED (_, journalIndex, questName, booleanisPushed, booleanisComplete, booleanmainStepChanged)
 	d( libQuest.Title .. ":EVENT_QUEST_ADVANCED questName:" .. questName .. " in map " .. GetZoneId(GetUnitZoneIndex("player")) .. " journalIndex:" .. journalIndex )
 
@@ -81,16 +81,16 @@ function libQuest.EVENT_QUEST_ADVANCED (_, journalIndex, questName, booleanisPus
 --	incompleteQuestData[questName].[9] = GetZoneId(GetUnitZoneIndex("player"))
 end
 
--- EVENT_QUEST_COMPLETE (number eventCode, string questName, number level, number previousExperience, number currentExperience, number championPoints, QuestType questType, InstanceDisplayType instanceDisplayType)
+-- API 100026	EVENT_QUEST_COMPLETE (number eventCode, string questName, number level, number previousExperience, number currentExperience, number championPoints, QuestType questType, InstanceDisplayType instanceDisplayType)
 function libQuest.EVENT_QUEST_COMPLETE (_, questName, _, _, _, _, questType, _)
-	d( libQuest.Title .. ":EVENT_QUEST_SHARE_REMOVED questName:" .. questName .. " that was questType:" .. questType .. " in map " .. GetZoneId(GetUnitZoneIndex("player")))
+	d( libQuest.Title .. ":EVENT_QUEST_COMPLETE questName:" .. questName .. " that was questType:" .. questType .. " in map " .. GetZoneId(GetUnitZoneIndex("player")))
 
 --	incompleteQuestData taulun 9 sarake on varattu zone id'eille johon nykynen sijainti pusketaan
 --	incompleteQuestData[questName].[9] = GetZoneId(GetUnitZoneIndex("player"))
 end
 
 -- EVENT_QUEST_REMOVED (number eventCode, boolean isCompleted, number journalIndex, string questName, number zoneIndex, number poiIndex, number questID)
-function libQuest.EVENT_QUEST_REMOVED(_, isCompleted, journalIndex, questName, zoneIndex, poiIndex, questID)
+function libQuest.EVENT_QUEST_REMOVED (_, isCompleted, journalIndex, questName, zoneIndex, poiIndex, questID)
 	d( libQuest.Title .. ":EVENT_QUEST_REMOVED questName:" .. questName .. " zoneIndex:" .. zoneIndex .. " poiIndex:" .. poiIndex .. " questID:" .. questID .. " in map " .. GetZoneId(GetUnitZoneIndex("player")))
 
 -- Perkeleenmoinen myllerys jossa valmis paketti tuupataan oikeaan questi tauluun JOS isCompleted = true
