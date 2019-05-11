@@ -42,7 +42,7 @@ end
 
 --	EVENT_QUEST_ADDED(eventCode, addedToJournalIndex, addedQuestName, objectiveName)
 function libQuest.EVENT_QUEST_ADDED(_, addedToJournalIndex, addedQuestName, objectiveName)
-	d( libQuest.Title .. ":EVENT_QUEST_ADDED " .. addedQuestName .. "  objectiveName:" .. objectiveName .. " to jouranlIndex " ..  journalIndex)
+	d( libQuest.Title .. ":EVENT_QUEST_ADDED " .. addedQuestName .. "  objectiveName:" .. objectiveName .. " to jouranlIndex " ..  addedToJournalIndex)
 
 --[[	for i,v in ipairs(incompleteQuestData) do
 		if v[1] == questName then
@@ -83,7 +83,7 @@ end
 
 -- EVENT_QUEST_COMPLETE (number eventCode, string questName, number level, number previousExperience, number currentExperience, number championPoints, QuestType questType, InstanceDisplayType instanceDisplayType)
 function libQuest.EVENT_QUEST_COMPLETE (_, questName, _, _, _, _, questType, _)
-	d( libQuest.Title .. ":EVENT_QUEST_SHARE_REMOVED questID:" .. numberQuestId .. " in map " .. GetZoneId(GetUnitZoneIndex("player")))
+	d( libQuest.Title .. ":EVENT_QUEST_SHARE_REMOVED questName:" .. questName .. " that was questType:" .. questType .. " in map " .. GetZoneId(GetUnitZoneIndex("player")))
 
 --	incompleteQuestData taulun 9 sarake on varattu zone id'eille johon nykynen sijainti pusketaan
 --	incompleteQuestData[questName].[9] = GetZoneId(GetUnitZoneIndex("player"))
