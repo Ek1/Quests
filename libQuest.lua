@@ -2,18 +2,19 @@ libQuest = {
 	Title = "libQuest",	-- Not codereview friendly but enduser friendly version of the add-on's name
 	Author = "Ek1",
 	Description = "Libary for other add-on's to get quest data.",
-	Version = "190511",
-	VariableVersion = "190511",
+	Version = "0.2",
+	VariableVersion = "2",
 	License = "BY-SA = Creative Commons Attribution-ShareAlike 4.0 International License",
 	URL = "https://github.com/Ek1/libQuest"
 }
 local ADDON = "libQuest"	-- Variable used to refer to this add-on. Codereview friendly.
 
 -- Tables about quest thats questId's are know
-local shareableQuestsIds = {} -- {questId, questName, QuestRepeatableType = false/1/40, questStarters = {}, questRecipients = {}, zoneIds = {}}
-local soloQuestsIds = {} -- questId, questName, QuestRepeatableType = false/1/40, questStarters = {}, questRecipients = {}, zoneIds = {}}
-local storyQuestsIds = {} -- {questId, questName, questStarters = {}, questRecipients = {}, zoneIds = {} }
-local craftingQuestsIds = {} -- {questId, questName, QuestRepeatableType = 1/40, questStarters = {}, questRecipients = {}, zoneIds = {}}
+-- BEFORE_RELEASE turn all to local
+shareableQuestsIds = {} -- {questId, questName, QuestRepeatableType = false/1/40, questStarters = {}, questRecipients = {}, zoneIds = {}}
+soloQuestsIds = {} -- {questId, questName, QuestRepeatableType = false/1/40, questStarters = {}, questRecipients = {}, zoneIds = {}}
+storyQuestsIds = {} -- {questId, questName, questStarters = {}, questRecipients = {}, zoneIds = {} }
+craftingQuestsIds = {} -- {questId, questName, QuestRepeatableType = 1/40, questStarters = {}, questRecipients = {}, zoneIds = {}}
 
 -- Work table where quests with incomplete data, like questID, are collected.
 local incompleteQuestData = {} -- {questId, questName, questType, shareable = false, QuestRepeatableType = false/1/40, questStarter, questRecipient, zoneIds = {}}
@@ -23,8 +24,8 @@ Eventtien on rekisteröinti järjestys on sama kun questeista saatava info
 EVENT_QUEST_SHARED		Hyvällä säkällä joku jakaa sen jolloin quest id tulee heti kättelyssä.
 EVENT_QUEST_ADDED		Itse questin lisäys journalIndex tauluun jolloin sekä ekan kerran kun journalIndex saa käyttöön
 EVENT_QUEST_ADVANCED	Questi etenee joten paikka talteen missä sitä on voinut edistää
+EVENT_QUEST_REMOVED		Questi poistuu journalIndex taulusta ja kerätty data tuupataan oikeaan data tauluun, viimistään nyt questId selviää
 EVENT_QUEST_COMPLETE	Questi on valmis, paikka talteen ja viimistään nyt questType tulee selville
-EVENT_QUEST_REMOVED		Questi poistuu journalIndex taulusta ja kerätty data tuupataan oikeaan data tauluun, viimsitään nyt questId selviää
 ]]
 
 -- Another player sharing a quest
@@ -33,6 +34,10 @@ function libQuest.EVENT_QUEST_SHARED (_, sharedQuestId)
 	d( libQuest.Title .. ":EVENT_QUEST_SHARED questID:" .. sharedQuestId )
 	local sharedQuestName, characterName, _, displayName = GetOfferedQuestShareInfo (sharedQuestId)
 
+	shareableQuestsIds[sharedQuestId] = tostring(sharedQuestName)
+
+	d( libQuest.Title .. ":EVENT_QUEST_SHARED questID:" .. sharedQuestId .. " sharedQuestName:" .. shareableQuestsIds[sharedQuestId])
+	d( shareableQuestsIds )
 --	incompleteQuestData taulun 1 sarake on varattu questId'lle
 --	incompleteQuestData[1] = sharedQuestId
 
@@ -81,14 +86,6 @@ function libQuest.EVENT_QUEST_ADVANCED (_, journalIndex, questName, booleanisPus
 --	incompleteQuestData[questName].[9] = GetZoneId(GetUnitZoneIndex("player"))
 end
 
--- API 100026	EVENT_QUEST_COMPLETE (number eventCode, string questName, number level, number previousExperience, number currentExperience, number championPoints, QuestType questType, InstanceDisplayType instanceDisplayType)
-function libQuest.EVENT_QUEST_COMPLETE (_, questName, _, _, _, _, questType, _)
-	d( libQuest.Title .. ":EVENT_QUEST_COMPLETE questName:" .. questName .. " that was questType:" .. questType .. " in map " .. GetZoneId(GetUnitZoneIndex("player")))
-
---	incompleteQuestData taulun 9 sarake on varattu zone id'eille johon nykynen sijainti pusketaan
---	incompleteQuestData[questName].[9] = GetZoneId(GetUnitZoneIndex("player"))
-end
-
 -- EVENT_QUEST_REMOVED (number eventCode, boolean isCompleted, number journalIndex, string questName, number zoneIndex, number poiIndex, number questID)
 function libQuest.EVENT_QUEST_REMOVED (_, isCompleted, journalIndex, questName, zoneIndex, poiIndex, questID)
 	d( libQuest.Title .. ":EVENT_QUEST_REMOVED questName:" .. questName .. " zoneIndex:" .. zoneIndex .. " poiIndex:" .. poiIndex .. " questID:" .. questID .. " in map " .. GetZoneId(GetUnitZoneIndex("player")))
@@ -101,9 +98,20 @@ function libQuest.EVENT_QUEST_REMOVED (_, isCompleted, journalIndex, questName, 
 
 end -- Quest has been pushed to correct questDataTable.
 
+-- API 100026	EVENT_QUEST_COMPLETE (number eventCode, string questName, number level, number previousExperience, number currentExperience, number championPoints, QuestType questType, InstanceDisplayType instanceDisplayType)
+function libQuest.EVENT_QUEST_COMPLETE (_, questName, _, _, _, _, questType, _)
+	d( libQuest.Title .. ":EVENT_QUEST_COMPLETE questName:" .. questName .. " that was questType:" .. questType .. " in map " .. GetZoneId(GetUnitZoneIndex("player")))
+
+--	incompleteQuestData taulun 9 sarake on varattu zone id'eille johon nykynen sijainti pusketaan
+--	incompleteQuestData[questName].[9] = GetZoneId(GetUnitZoneIndex("player"))
+end
+
 
 -- Lets fire up the add-on by registering for events and loading variables
 function libQuest.Initialize()
+
+	-- load variables, do magic
+
 	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_SHARED,	libQuest.EVENT_QUEST_SHARED)
 	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_ADDED,	libQuest.EVENT_QUEST_ADDED)
 	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_ADVANCED,	libQuest.EVENT_QUEST_ADVANCED)
@@ -116,13 +124,13 @@ end
 -- Variable to keep count how many loads have been done before it was this ones turn.
 local loadOrder = 0
 function libQuest.OnlibQuestLoaded(_, libQuestName)
-  if libQuestName == ADDON then
---	Seems it is our time so lets stop listening load trigger and initialize the add-on
-	d( libQuest.Title .. ": load order " ..  loadOrder .. ", starting initalization")
-	EVENT_MANAGER:UnregisterForEvent(ADDON, EVENT_ADD_ON_LOADED)
-	libQuest.Initialize()
-  end
-  loadOrder = loadOrder+1
+	if libQuestName == ADDON then
+	--	Seems it is our time so lets stop listening load trigger and initialize the add-on
+		d( libQuest.Title .. ": load order " ..  loadOrder .. ", starting initalization")
+		EVENT_MANAGER:UnregisterForEvent(ADDON, EVENT_ADD_ON_LOADED)
+		libQuest.Initialize()
+	end
+loadOrder = loadOrder+1
 end
 
 -- Registering the libQuest's initializing event when add-on's are loaded 
