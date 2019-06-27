@@ -1,9 +1,9 @@
 ## Title: libQuest
-## APIVersion: 100026 100027
+## APIVersion: 100027 100028
 ## IsLibrary: true
-## Version: 4.3-190511
+## Version: 1.0
 ## Author: Ek1
 ## License: BY-SA = Creative Commons Attribution-ShareAlike 4.0 International License
-## SavedVariables: libQuest_shareableQuestsIds libQuest_soloQuestsIds libQuest_craftingQuestsIds libQuest_questsIdsUnknown
-
+## SavedVariables: libQuest_allQuests libQuest_ongoingCharacterQuests libQuest_charactersQuestHistory
+ 
 libQuest.lua

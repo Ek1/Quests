@@ -2,25 +2,23 @@ libQuest = {
 	Title = "libQuest",	-- Not codereview friendly but enduser friendly version of the add-on's name
 	Author = "Ek1",
 	Description = "Libary for other add-on's to get quest data.",
-	Version = "0.2",
+	Version = "1.0",
 	VariableVersion = "2",
 	License = "BY-SA = Creative Commons Attribution-ShareAlike 4.0 International License",
 	URL = "https://github.com/Ek1/libQuest"
 }
 local ADDON = "libQuest"	-- Variable used to refer to this add-on. Codereview friendly.
 
--- Tables about quest thats questId's are know
--- BEFORE_RELEASE turn all to local
-shareableQuestsIds = {} -- {questId, questName, QuestRepeatableType = false/1/40, questStarters = {}, questRecipients = {}, zoneIds = {}}
-soloQuestsIds = {} -- {questId, questName, QuestRepeatableType = false/1/40, questStarters = {}, questRecipients = {}, zoneIds = {}}
-storyQuestsIds = {} -- {questId, questName, questStarters = {}, questRecipients = {}, zoneIds = {} }
-craftingQuestsIds = {} -- {questId, questName, QuestRepeatableType = 1/40, questStarters = {}, questRecipients = {}, zoneIds = {}}
-
--- Work table where quests with incomplete data, like questID, are collected.
-local incompleteQuestData = {} -- {questId, questName, questType, shareable = false, QuestRepeatableType = false/1/40, questStarter, questRecipient, zoneIds = {}}
+-- BEFORE_RELEASE turn all following to local.
+-- Table about quest that's questId's are know. The questId works as index and thanks to Lua the missing entrys generate zero memory load.
+local allQuests =  {} -- {questName, QuestRepeatableType = false/1/40, questStarters = {}, questRecipients = {}, zoneIds = {}}
+-- Table to dublicate journal with corresponding index for outlogged character quest progress info's
+local charactersOngoingQuests =  {} -- {questName, acceptedTime}
+-- Table to keep track when quest was last done
+local charactersQuestHistory =  {} -- {questName, QuestRepeatableType = false/1/40, questStarters = {}, questRecipients = {}, zoneIds = {}}
 
 --[[
-Eventtien on rekisteröinti järjestys on sama kun questeista saatava info 
+Order of qquest events usually firing
 EVENT_QUEST_SHARED		Hyvällä säkällä joku jakaa sen jolloin quest id tulee heti kättelyssä.
 EVENT_QUEST_ADDED		Itse questin lisäys journalIndex tauluun jolloin sekä ekan kerran kun journalIndex saa käyttöön
 EVENT_QUEST_ADVANCED	Questi etenee joten paikka talteen missä sitä on voinut edistää
@@ -34,10 +32,11 @@ function libQuest.EVENT_QUEST_SHARED (_, sharedQuestId)
 	d( libQuest.Title .. ":EVENT_QUEST_SHARED questID:" .. sharedQuestId )
 	local sharedQuestName, characterName, _, displayName = GetOfferedQuestShareInfo (sharedQuestId)
 
-	shareableQuestsIds[sharedQuestId] = tostring(sharedQuestName)
+--	allQuests[sharedQuestId] = tostring(sharedQuestName)
+	table.insert(allQuests[sharedQuestId], tostring(sharedQuestName) )
 
-	d( libQuest.Title .. ":EVENT_QUEST_SHARED questID:" .. sharedQuestId .. " sharedQuestName:" .. shareableQuestsIds[sharedQuestId])
-	d( shareableQuestsIds )
+	d( libQuest.Title .. ":EVENT_QUEST_SHARED questID:" .. sharedQuestId .. " sharedQuestName:" .. allQuests[sharedQuestId])
+	d( allQuests )
 --	incompleteQuestData taulun 1 sarake on varattu questId'lle
 --	incompleteQuestData[1] = sharedQuestId
 
@@ -110,7 +109,11 @@ end
 -- Lets fire up the add-on by registering for events and loading variables
 function libQuest.Initialize()
 
-	-- load variables, do magic
+	-- Loading account variables i.o. all quest with complete data
+	allQuests = ZO_SavedVars:NewAccountWide("libQuest_allQuests", libQuest.variableVersion, nil, allQuests)
+	-- Loading character variables i.o. all incomplete quests 
+	charactersOngoingQuests	= ZO_SavedVars:NewCharacterIdSettings("libQuest_ongoingCharacterQuests", libQuest.variableVersion, nil, charactersOngoingQuests)
+	charactersQuestHistory	= ZO_SavedVars:NewCharacterIdSettings("libQuest_charactersQuestHistory", libQuest.variableVersion, nil, charactersQuestHistory)
 
 	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_SHARED,	libQuest.EVENT_QUEST_SHARED)
 	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_ADDED,	libQuest.EVENT_QUEST_ADDED)
@@ -135,3 +138,10 @@ end
 
 -- Registering the libQuest's initializing event when add-on's are loaded 
 EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_ADD_ON_LOADED, libQuest.OnlibQuestLoaded)
+
+-- Above is core, time to introduce the actual libary section interface for other's aka getters
+
+-- 
+function libQuest.getQuestId(whatsMyId)
+	return allQuests
+end
