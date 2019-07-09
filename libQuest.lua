@@ -33,10 +33,7 @@ function libQuest.EVENT_QUEST_SHARED (_, sharedQuestId)
 	local sharedQuestName, characterName, _, displayName = GetOfferedQuestShareInfo (sharedQuestId)
 
 --	allQuests[sharedQuestId] = tostring(sharedQuestName)
-	table.insert(allQuests[sharedQuestId], tostring(sharedQuestName) )
-
-	d( libQuest.Title .. ":EVENT_QUEST_SHARED questID:" .. sharedQuestId .. " sharedQuestName:" .. allQuests[sharedQuestId])
-	d( allQuests )
+--	table.insert(allQuests[sharedQuestId], tostring(sharedQuestName) )
 --	incompleteQuestData taulun 1 sarake on varattu questId'lle
 --	incompleteQuestData[1] = sharedQuestId
 
@@ -88,6 +85,8 @@ end
 -- EVENT_QUEST_REMOVED (number eventCode, boolean isCompleted, number journalIndex, string questName, number zoneIndex, number poiIndex, number questID)
 function libQuest.EVENT_QUEST_REMOVED (_, isCompleted, journalIndex, questName, zoneIndex, poiIndex, questID)
 	d( libQuest.Title .. ":EVENT_QUEST_REMOVED questName:" .. questName .. " zoneIndex:" .. zoneIndex .. " poiIndex:" .. poiIndex .. " questID:" .. questID .. " in map " .. GetZoneId(GetUnitZoneIndex("player")))
+
+	table.insert(allQuests[questID], tostring(questName) )
 
 -- Perkeleenmoinen myllerys jossa valmis paketti tuupataan oikeaan questi tauluun JOS isCompleted = true
 -- incompleteQuestData[3] on Quest_type ja jos on 4 niin pusketaan craftingQuestsIds
