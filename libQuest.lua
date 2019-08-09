@@ -21,7 +21,7 @@ charactersOngoingQuests = {} -- {questName, acceptedTime}
 charactersQuestHistory = {} -- {timestamp}
 
 lastQuestIdRemoved = {}
--- BEFORE_RELEASE turn all aboce to local.
+-- BEFORE_RELEASE turn all above to local.
 
 --[[	Order of the quest events usually firing
 	EVENT_QUEST_SHARED		First chance to get questId combined with GetOfferedQuestShareInfo(sharedQuestId)
@@ -70,13 +70,28 @@ end
 function libQuest.EVENT_QUEST_ADVANCED (_, journalIndex, questName, booleanisPushed, booleanisComplete, booleanmainStepChanged)
 
 	local questId = getQuestId(questName)
+	local zoneIdWhereAdvanced = GetZoneId(GetUnitZoneIndex("player"))
+
+	-- TPrecheck that we actually have the questId
 	if type(questId) == "number" then
-		if type(allQuestIds[questId].zones) ~= "table" then
-			allQuestIds[questId].zones = {}
+		-- The zoneId where the quest takes place is saved
+		if type(allQuestIds[lastQuestIdRemoved].zones) ~= "table" then
+			allQuestIds[lastQuestIdRemoved].zones = {}
 		end
-		-- addd zone to allQuestIds[questId].zones
+		local seeking = true
+		local i = 1
+		while seeking do
+			if allQuestIds[lastQuestIdRemoved].zones[i] == nil then
+				allQuestIds[lastQuestIdRemoved].zones[i] = zoneIdWhereAdvanced
+				seeking = false
+			elseif allQuestIds[lastQuestIdRemoved].zones[i] == zoneIdWhereAdvanced then
+				seeking = false
+			end
+			allQuestIds[lastQuestIdRemoved].zones[0] = i
+			i = i + 1
+		end	-- zoneId saving done
 	end
-	d( libQuest.TITLE .. ":EVENT_QUEST_ADVANCED questName:" .. questName .. " in map " .. GetZoneId(GetUnitZoneIndex("player")) .. " journalIndex:" .. journalIndex  .. " booleanisPushed:" .. tostring(booleanisPushed) )
+	d( libQuest.TITLE .. ":EVENT_QUEST_ADVANCED questName:" .. questName .. " in map " .. zoneIdWhereAdvanced .. " journalIndex:" .. journalIndex  .. " booleanisPushed:" .. tostring(booleanisPushed) )
 end
 
 -- EVENT_QUEST_REMOVED (number eventCode, boolean isCompleted, number journalIndex, string questName, number zoneIndex, number poiIndex, number questId)
@@ -87,9 +102,6 @@ function libQuest.EVENT_QUEST_REMOVED (_, isCompleted, journalIndex, questName, 
 	libQuest.setQuestIdToName(questId, questName)
 
 	d( libQuest.TITLE .. ":EVENT_QUEST_REMOVED questName:" .. questName .. " zoneIndex:" .. zoneIndex .. " poiIndex:" .. poiIndex .. " questId:" .. questId .. " in map " .. GetZoneId(GetUnitZoneIndex("player")) .. "  lastQuestIdRemoved:" .. lastQuestIdRemoved)
-	libQuest_allQuestIds	= allQuestIds or {}
-	libQuest_allQuestNames	= allQuestNames or {}
-
 end -- QuestData was pushed to allQuestIds and allQuestNames
 
 -- This is only called when actually completing a quest, thus gaining the rewards
@@ -101,7 +113,25 @@ function libQuest.EVENT_QUEST_COMPLETE (_, questName, _, _, _, _, questType, _)
 	allQuestIds[lastQuestIdRemoved].name = tostring(questName)
 	allQuestIds[lastQuestIdRemoved].type = questType
 
-	d( libQuest.TITLE .. ":EVENT_QUEST_COMPLETE questName:" .. questName .. " that was questType:" .. questType .. " in map " .. GetZoneId(GetUnitZoneIndex("player")) .. "  lastQuestIdRemoved:" .. lastQuestIdRemoved)
+	local zoneIdWhereAdvanced = GetZoneId(GetUnitZoneIndex("player"))
+
+	-- The zoneId where the quest takes place is saved
+	if type(allQuestIds[lastQuestIdRemoved].zones) ~= "table" then
+		allQuestIds[lastQuestIdRemoved].zones = {}
+	end
+	local seeking = true
+	local i = 1
+	while seeking do
+		if allQuestIds[lastQuestIdRemoved].zones[i] == nil then
+			allQuestIds[lastQuestIdRemoved].zones[i] = zoneIdWhereAdvanced
+			seeking = false
+		elseif allQuestIds[lastQuestIdRemoved].zones[i] == zoneIdWhereAdvanced then
+			seeking = false
+		end
+		allQuestIds[lastQuestIdRemoved].zones[0] = i
+		i = i + 1
+	end	-- zoneId saving done
+	d( libQuest.TITLE .. ":EVENT_QUEST_COMPLETE questName:" .. questName .. " that was questType:" .. questType .. " in map " .. zoneIdWhereAdvanced .. "  lastQuestIdRemoved:" .. lastQuestIdRemoved)
 end
 
 
@@ -125,7 +155,7 @@ function libQuest.Initialize()
 	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_COMPLETE,	libQuest.EVENT_QUEST_COMPLETE)
 	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_REMOVED,	libQuest.EVENT_QUEST_REMOVED)
 
-	d( libQuest.TITLE .. ": initalization done. Holding data of " .. table.getn{allQuestIds} .. " quests and this characters " .. table.getn{charactersOngoingQuests} .. " ongoing quest with history of " .. table.getn{charactersQuestHistory} .. " quests.")
+	d( libQuest.TITLE .. ": initalization done. Holding data of " .. allQuestIds[0] .. " quests and this characters " .. table.getn{charactersOngoingQuests} .. " ongoing quest with history of " .. table.getn{charactersQuestHistory} .. " quests.")
 end
 
 -- Variable to keep count how many loads have been done before it was this ones turn.
@@ -150,9 +180,10 @@ EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_ADD_ON_LOADED, libQuest.OnlibQuestLo
 --	Fills allQuestIds with a (new) QuestId and its name.
 function libQuest.setNameToQuestId(questName, questId)
 
-	-- If the index spot is not a table, create one
+	-- If the index spot is not a table, create one and also increase the tables zero index by one that is keeping track of how many quests we know
 	if type(allQuestIds[questId]) ~= "table" then
 		allQuestIds[questId] = {}
+		allQuestIds[0] = allQuestIds[0]+1
 	end
 
 	-- Fill the name to the table allQuestIds
@@ -171,12 +202,16 @@ function libQuest.setQuestIdToName(questId, questName)
 end
 
 -- Get'ter: give questName and recieve the QuestId or nil if empty
-function getQuestName(idToName)
-	return allQuestIds[idToName].name
+function getQuestName(questId)
+	return allQuestIds[questId].name
 end
 
-function getQuestId(nameToId)
-	return allQuestNames.nameToId
+function getQuestId(questName)
+	return allQuestNames.questName
+end
+
+function getZoneIds(questId)
+	return allQuestIds[questId].zones
 end
 
 -- offer POI's
