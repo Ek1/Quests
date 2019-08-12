@@ -12,13 +12,16 @@ local ADDON = "libQuest"	-- Variable used to refer to this add-on. Codereview fr
 -- BEFORE_RELEASE turn all following to local.
 -- Table about quest that's questId's are know. The questId works as index and thanks to Lua the missing entrys generate zero memory load.
 allQuestIds = {} --	{questName, QuestRepeatableType = false/1/40, questStarters = {}, questRecipients = {}, zoneIds = {}}
+allQuestIds[0] = 0
 -- Table to keep track what quests names have multiple questIds
 allQuestNames = {} --	{ {questId} }
-
+allQuestNames[0] = 0
 -- Table to dublicate journal with corresponding index for outlogged character quest progress info's
 charactersOngoingQuests = {} -- {questName, acceptedTime}
+charactersOngoingQuests[0] = 0
 -- Table to keep track when quest was last done
 charactersQuestHistory = {} -- {timestamp}
+charactersQuestHistory[0] = 0
 
 lastQuestIdRemoved = {}
 -- BEFORE_RELEASE turn all above to local.
@@ -60,9 +63,16 @@ function libQuest.EVENT_QUEST_ADDED(_, addedToJournalIndex, addedQuestName, obje
 	charactersOngoingQuests[addedToJournalIndex].name = addedQuestName
 	charactersOngoingQuests[addedToJournalIndex].objectiveName = objectiveName
 	charactersOngoingQuests[addedToJournalIndex].acceptedTime = os.time()
+	charactersOngoingQuests[addedToJournalIndex].shareable = GetIsQuestSharable(addedToJournalIndex)
+	charactersOngoingQuests[addedToJournalIndex].repeatable = GetJournalQuestRepeatType(addedToJournalIndex)
 
--- GetJournalQuestInfo(number journalQuestIndex)
--- Returns: string questName, string backgroundText, string activeStepText, number activeStepType, string activeStepTrackerOverrideText, boolean completed, boolean tracked, number questLevel, boolean pushed, number questType, number InstanceDisplayType instanceDisplayType
+	if charactersOngoingQuests[0] == nil then
+		charactersOngoingQuests[0] = 1
+	else
+		charactersOngoingQuests[0] = charactersOngoingQuests[0] + 1
+	end
+	-- GetJournalQuestInfo(number journalQuestIndex)
+	-- Returns: string questName, string backgroundText, string activeStepText, number activeStepType, string activeStepTrackerOverrideText, boolean completed, boolean tracked, number questLevel, boolean pushed, number questType, number InstanceDisplayType instanceDisplayType
 end
 
 -- Quest advancing, more info gained and most importantly ZONE info gained
@@ -91,7 +101,7 @@ function libQuest.EVENT_QUEST_ADVANCED (_, journalIndex, questName, booleanisPus
 			i = i + 1
 		end	-- zoneId saving done
 	end
-	d( libQuest.TITLE .. ":EVENT_QUEST_ADVANCED questName:" .. questName .. " in map " .. zoneIdWhereAdvanced .. " journalIndex:" .. journalIndex  .. " booleanisPushed:" .. tostring(booleanisPushed) )
+--	d( libQuest.TITLE .. ":EVENT_QUEST_ADVANCED questName:" .. questName .. " in map " .. zoneIdWhereAdvanced .. " journalIndex:" .. journalIndex  .. " booleanisPushed:" .. tostring(booleanisPushed) )
 end
 
 -- EVENT_QUEST_REMOVED (number eventCode, boolean isCompleted, number journalIndex, string questName, number zoneIndex, number poiIndex, number questId)
@@ -100,6 +110,19 @@ function libQuest.EVENT_QUEST_REMOVED (_, isCompleted, journalIndex, questName, 
 
 	libQuest.setNameToQuestId(questName, questId)
 	libQuest.setQuestIdToName(questId, questName)
+
+	-- If the quest was shareable, then pass that info to the allQuestIds
+	if charactersOngoingQuests[journalIndex].shareable ~= nil then
+		allQuestIds[questId].shareable = charactersOngoingQuests[journalIndex].shareable
+	end
+
+	-- If the quest was repeatable, then pass that info to the allQuestIds
+	if charactersOngoingQuests[journalIndex].repeatable ~= nil then
+		allQuestIds[questId].repeatable = charactersOngoingQuests[journalIndex].repeatable
+	end
+
+	charactersOngoingQuests[journalIndex] = nil
+	charactersOngoingQuests[0] = charactersOngoingQuests[0] - 1
 
 	d( libQuest.TITLE .. ":EVENT_QUEST_REMOVED questName:" .. questName .. " zoneIndex:" .. zoneIndex .. " poiIndex:" .. poiIndex .. " questId:" .. questId .. " in map " .. GetZoneId(GetUnitZoneIndex("player")) .. "  lastQuestIdRemoved:" .. lastQuestIdRemoved)
 end -- QuestData was pushed to allQuestIds and allQuestNames
@@ -173,7 +196,6 @@ end
 -- Registering the libQuest's initializing event when add-on's are loaded 
 EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_ADD_ON_LOADED, libQuest.OnlibQuestLoaded)
 
--- Above is core, time to introduce the actual libary section interface for other's aka getters
 
 --	Set'ters:
 
@@ -195,13 +217,26 @@ function libQuest.setQuestIdToName(questId, questName)
 	-- First entry? Create a table
 	if type(allQuestNames[questName]) ~= "table" then
 		allQuestNames[questName] = {}
+		allQuestNames[0] = allQuestNames[0]+1
 	end
-	
-	-- TODO: needs to be redone with a loop. Now creates dublicates.
-	allQuestNames[questName][#allQuestNames[questName] + 1]  = questId
+
+	local seeking = true
+	local i = 1
+	while seeking do
+		if not allQuestNames.questName[i] then
+			allQuestNames.questName[i] = questId
+			seeking = false
+		elseif allQuestNames.questName[i] == questId then
+			seeking = false
+		end
+		allQuestNames.questName[0] = i
+		i = i + 1
+	end	-- questId's saved under quest name
 end
 
--- Get'ter: give questName and recieve the QuestId or nil if empty
+-- Above is core, below is the actual libary section interface for other add-ons
+
+-- Get'ters: give questName and recieve the QuestId or nil if empty
 function getQuestName(questId)
 	return allQuestIds[questId].name
 end
@@ -214,4 +249,8 @@ function getZoneIds(questId)
 	return allQuestIds[questId].zones
 end
 
--- offer POI's
+function getNumberOfQuestIdsKnown()
+	return allQuestIds[0]
+end
+
+-- TODO: offer questId's POI's
