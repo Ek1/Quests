@@ -51,13 +51,14 @@ end
 -- NPC offering a quest?
 -- API 100026	EVENT_QUEST_OFFERED (number eventCode)
 function libQuest.EVENT_QUEST_OFFERED (eventCode)
-	d( libQuest.TITLE .. ":EVENT_QUEST_OFFERED eventCode:" .. eventCode )
+--	d( libQuest.TITLE .. ":EVENT_QUEST_OFFERED eventCode:" .. eventCode )
 end
 
 -- New quest gained and its initial info collected
 -- API 100026	EVENT_QUEST_ADDED (number eventCode, number journalIndex, string questName, string objectiveName)
 function libQuest.EVENT_QUEST_ADDED(_, addedToJournalIndex, addedQuestName, objectiveName)
-	d( libQuest.TITLE .. ":EVENT_QUEST_ADDED " .. addedQuestName .. "  objectiveName:" .. objectiveName .. " to jouranlIndex " ..  addedToJournalIndex)
+--	d( libQuest.TITLE .. ":EVENT_QUEST_ADDED " .. addedQuestName .. "  objectiveName:" .. objectiveName .. " to jouranlIndex " ..  addedToJournalIndex)
+
 --	Updating the journalIndex with the added quest data
 	charactersOngoingQuests[addedToJournalIndex] = {}
 	charactersOngoingQuests[addedToJournalIndex].name = addedQuestName
@@ -66,7 +67,7 @@ function libQuest.EVENT_QUEST_ADDED(_, addedToJournalIndex, addedQuestName, obje
 	charactersOngoingQuests[addedToJournalIndex].shareable = GetIsQuestSharable(addedToJournalIndex)
 	charactersOngoingQuests[addedToJournalIndex].repeatable = GetJournalQuestRepeatType(addedToJournalIndex)
 
-	if charactersOngoingQuests[0] == nil then
+	if not charactersOngoingQuests[0] then
 		charactersOngoingQuests[0] = 1
 	else
 		charactersOngoingQuests[0] = charactersOngoingQuests[0] + 1
@@ -91,7 +92,7 @@ function libQuest.EVENT_QUEST_ADVANCED (_, journalIndex, questName, booleanisPus
 		local seeking = true
 		local i = 1
 		while seeking do
-			if allQuestIds[lastQuestIdRemoved].zones[i] == nil then
+			if not allQuestIds[lastQuestIdRemoved].zones[i] then
 				allQuestIds[lastQuestIdRemoved].zones[i] = zoneIdWhereAdvanced
 				seeking = false
 			elseif allQuestIds[lastQuestIdRemoved].zones[i] == zoneIdWhereAdvanced then
@@ -112,12 +113,12 @@ function libQuest.EVENT_QUEST_REMOVED (_, isCompleted, journalIndex, questName, 
 	libQuest.setQuestIdToName(questId, questName)
 
 	-- If the quest was shareable, then pass that info to the allQuestIds
-	if charactersOngoingQuests[journalIndex].shareable ~= nil then
+	if charactersOngoingQuests[journalIndex].shareable then
 		allQuestIds[questId].shareable = charactersOngoingQuests[journalIndex].shareable
 	end
 
 	-- If the quest was repeatable, then pass that info to the allQuestIds
-	if charactersOngoingQuests[journalIndex].repeatable ~= nil then
+	if charactersOngoingQuests[journalIndex].repeatable then
 		allQuestIds[questId].repeatable = charactersOngoingQuests[journalIndex].repeatable
 	end
 
@@ -145,7 +146,7 @@ function libQuest.EVENT_QUEST_COMPLETE (_, questName, _, _, _, _, questType, _)
 	local seeking = true
 	local i = 1
 	while seeking do
-		if allQuestIds[lastQuestIdRemoved].zones[i] == nil then
+		if not allQuestIds[lastQuestIdRemoved].zones[i] then
 			allQuestIds[lastQuestIdRemoved].zones[i] = zoneIdWhereAdvanced
 			seeking = false
 		elseif allQuestIds[lastQuestIdRemoved].zones[i] == zoneIdWhereAdvanced then
@@ -223,13 +224,13 @@ function libQuest.setQuestIdToName(questId, questName)
 	local seeking = true
 	local i = 1
 	while seeking do
-		if not allQuestNames.questName[i] then
-			allQuestNames.questName[i] = questId
+		if not allQuestNames[questName][i] then
+			allQuestNames[questName][i] = questId
 			seeking = false
-		elseif allQuestNames.questName[i] == questId then
+		elseif allQuestNames[questName][i] == questId then
 			seeking = false
 		end
-		allQuestNames.questName[0] = i
+		allQuestNames[questName][0] = i
 		i = i + 1
 	end	-- questId's saved under quest name
 end
@@ -242,7 +243,7 @@ function getQuestName(questId)
 end
 
 function getQuestId(questName)
-	return allQuestNames.questName
+	return allQuestNames[questName]
 end
 
 function getZoneIds(questId)
