@@ -86,19 +86,19 @@ function libQuest.EVENT_QUEST_ADVANCED (_, journalIndex, questName, booleanisPus
 	-- TPrecheck that we actually have the questId
 	if type(questId) == "number" then
 		-- The zoneId where the quest takes place is saved
-		if type(allQuestIds[lastQuestIdRemoved].zones) ~= "table" then
-			allQuestIds[lastQuestIdRemoved].zones = {}
+		if type(allQuestIds[questId].zones) ~= "table" then
+			allQuestIds[questId].zones = {}
 		end
 		local seeking = true
 		local i = 1
 		while seeking do
-			if not allQuestIds[lastQuestIdRemoved].zones[i] then
-				allQuestIds[lastQuestIdRemoved].zones[i] = zoneIdWhereAdvanced
+			if not allQuestIds[questId].zones[i] then
+				allQuestIds[questId].zones[i] = zoneIdWhereAdvanced
 				seeking = false
-			elseif allQuestIds[lastQuestIdRemoved].zones[i] == zoneIdWhereAdvanced then
+			elseif allQuestIds[questId].zones[i] == zoneIdWhereAdvanced then
 				seeking = false
 			end
-			allQuestIds[lastQuestIdRemoved].zones[0] = i
+			allQuestIds[questId].zones[0] = i
 			i = i + 1
 		end	-- zoneId saving done
 	end
@@ -112,17 +112,19 @@ function libQuest.EVENT_QUEST_REMOVED (_, isCompleted, journalIndex, questName, 
 	libQuest.setNameToQuestId(questName, questId)
 	libQuest.setQuestIdToName(questId, questName)
 
-	-- If the quest was shareable, then pass that info to the allQuestIds
-	if charactersOngoingQuests[journalIndex].shareable then
-		allQuestIds[questId].shareable = charactersOngoingQuests[journalIndex].shareable
+	-- First making sure the charactersOngoingQuests actually has a record of the # journalIndex
+	if charactersOngoingQuests[journalIndex] then
+		-- If the quest was shareable, then pass that info to the allQuestIds
+		if charactersOngoingQuests[journalIndex].shareable then
+			allQuestIds[questId].shareable = charactersOngoingQuests[journalIndex].shareable
+		end
+		-- If the quest was repeatable, then pass that info to the allQuestIds
+		if charactersOngoingQuests[journalIndex].repeatable then
+			allQuestIds[questId].repeatable = charactersOngoingQuests[journalIndex].repeatable
+		end
+		-- reseting the journal index
+		charactersOngoingQuests[journalIndex] = nil
 	end
-
-	-- If the quest was repeatable, then pass that info to the allQuestIds
-	if charactersOngoingQuests[journalIndex].repeatable then
-		allQuestIds[questId].repeatable = charactersOngoingQuests[journalIndex].repeatable
-	end
-
-	charactersOngoingQuests[journalIndex] = nil
 	charactersOngoingQuests[0] = charactersOngoingQuests[0] - 1
 
 	d( libQuest.TITLE .. ":EVENT_QUEST_REMOVED questName:" .. questName .. " zoneIndex:" .. zoneIndex .. " poiIndex:" .. poiIndex .. " questId:" .. questId .. " in map " .. GetZoneId(GetUnitZoneIndex("player")) .. "  lastQuestIdRemoved:" .. lastQuestIdRemoved)
