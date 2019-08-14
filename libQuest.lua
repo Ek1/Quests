@@ -127,13 +127,16 @@ function libQuest.EVENT_QUEST_REMOVED (_, isCompleted, journalIndex, questName, 
 	end
 	charactersOngoingQuests[0] = charactersOngoingQuests[0] - 1
 
-	d( libQuest.TITLE .. ":EVENT_QUEST_REMOVED questName:" .. questName .. " zoneIndex:" .. zoneIndex .. " poiIndex:" .. poiIndex .. " questId:" .. questId .. " in map " .. GetZoneId(GetUnitZoneIndex("player")) .. "  lastQuestIdRemoved:" .. lastQuestIdRemoved)
+--	d( libQuest.TITLE .. ":EVENT_QUEST_REMOVED questName:" .. questName .. " zoneIndex:" .. zoneIndex .. " poiIndex:" .. poiIndex .. " questId:" .. questId .. " in map " .. GetZoneId(GetUnitZoneIndex("player")) .. "  lastQuestIdRemoved:" .. lastQuestIdRemoved)
 end -- QuestData was pushed to allQuestIds and allQuestNames
 
 -- This is only called when actually completing a quest, thus gaining the rewards
 -- API 100026	EVENT_QUEST_COMPLETE (number eventCode, string questName, number level, number previousExperience, number currentExperience, number championPoints, QuestType questType, InstanceDisplayType instanceDisplayType)
 function libQuest.EVENT_QUEST_COMPLETE (_, questName, _, _, _, _, questType, _)
 
+	if not charactersQuestHistory[lastQuestIdRemoved] then
+		charactersQuestHistory[0] = charactersQuestHistory[0] + 1
+	end
 	charactersQuestHistory[lastQuestIdRemoved] = os.time()
 
 	allQuestIds[lastQuestIdRemoved].name = tostring(questName)
@@ -157,7 +160,7 @@ function libQuest.EVENT_QUEST_COMPLETE (_, questName, _, _, _, _, questType, _)
 		allQuestIds[lastQuestIdRemoved].zones[0] = i
 		i = i + 1
 	end	-- zoneId saving done
-	d( libQuest.TITLE .. ":EVENT_QUEST_COMPLETE questName:" .. questName .. " that was questType:" .. questType .. " in map " .. zoneIdWhereAdvanced .. "  lastQuestIdRemoved:" .. lastQuestIdRemoved)
+--	d( libQuest.TITLE .. ":EVENT_QUEST_COMPLETE questName:" .. questName .. " that was questType:" .. questType .. " in map " .. zoneIdWhereAdvanced .. "  lastQuestIdRemoved:" .. lastQuestIdRemoved)
 end
 
 
@@ -169,19 +172,17 @@ function libQuest.Initialize()
 	allQuestNames	= libQuest_allQuestNames or {}
 
 	-- Loading character variables i.o. all incomplete quests
-	charactersOngoingQuests	= ZO_SavedVars:NewCharacterIdSettings("libQuest_ongoingCharacterQuests", libQuest.VARIABLEVERSION, GetWorldName(), charactersOngoingQuests) or {}
 	charactersQuestHistory	= ZO_SavedVars:NewCharacterIdSettings("libQuest_charactersQuestHistory", libQuest.VARIABLEVERSION, GetWorldName(), charactersQuestHistory) or {}
+	charactersOngoingQuests	= ZO_SavedVars:NewCharacterIdSettings("libQuest_ongoingCharacterQuests", libQuest.VARIABLEVERSION, GetWorldName(), charactersOngoingQuests) or {}
 
 	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_SHARED,	libQuest.EVENT_QUEST_SHARED)
 	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_OFFERED,	libQuest.EVENT_QUEST_OFFERED)
 	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_ADDED,	libQuest.EVENT_QUEST_ADDED)
-
 	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_ADVANCED,	libQuest.EVENT_QUEST_ADVANCED)
-	
 	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_COMPLETE,	libQuest.EVENT_QUEST_COMPLETE)
 	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_REMOVED,	libQuest.EVENT_QUEST_REMOVED)
 
-	d( libQuest.TITLE .. ": initalization done. Holding data of " .. allQuestIds[0] .. " quests and this characters " .. table.getn{charactersOngoingQuests} .. " ongoing quest with history of " .. table.getn{charactersQuestHistory} .. " quests.")
+	d( libQuest.TITLE .. ": initalization done. Holding data of " .. allQuestIds[0] .. " quests and this characters " .. charactersOngoingQuests[0] .. " ongoing quest with history of " .. charactersQuestHistory[0] .. " quests.")
 end
 
 -- Variable to keep count how many loads have been done before it was this ones turn.
@@ -236,6 +237,53 @@ function libQuest.setQuestIdToName(questId, questName)
 		i = i + 1
 	end	-- questId's saved under quest name
 end
+
+-- To fix current characters data
+function libQuest.fixCharacterData()
+
+	-- Reset charactersOngoingQuests[0] and loop's journalIndex to fix possibly broken record keeping and get back to track
+	charactersOngoingQuests[0] = 0
+	for i=1,25 do	-- Character has maximum of 25s quest active at any given time
+		if GetJournalQuestLevel(i) > 0 then	-- empty journalIndex return's 0
+			charactersOngoingQuests[0] = charactersOngoingQuests[0] + 1
+			charactersOngoingQuests[i].name = GetJournalQuestName(i)
+			charactersOngoingQuests[i].shareable = GetIsQuestSharable(i)
+			charactersOngoingQuests[i].repeatable = GetJournalQuestRepeatType(i)
+		else
+			charactersOngoingQuests[i] = nil
+		end
+	end
+
+	--  Reset charactersQuestHistory[0] and loop's charactersQuestHistory to fix possibly broken record keeping and get back to track
+	local highestQuestId = 6384	-- 100028 had 6384 as highest questId.
+	charactersQuestHistory[0] = 0
+	while i < highestQuestId do
+		if charactersQuestHistory[i] then
+			charactersQuestHistory[0] = charactersQuestHistory[0] + 1
+		end
+	end
+end
+
+-- To fix collected data of quests
+function libQuest.fixCollectedData()
+	--  Reset charactersQuestHistory[0] and loop charactersQuestHistory to fix possibly broken record keeping and get back to track
+	local highestQuestId = 6384	-- 100028 had 6384 as highest questId.
+	allQuestIds[0] = 0
+	while i < highestQuestId do
+		if allQuestIds[i] then
+			allQuestIds[0] = allQuestIds[0] + 1
+		end
+	end
+--[[ TODO: 
+	-- Reset allQuestNames[0] and loop allQuestNames and allQuestNames[i].questIds
+	allQuestNames[0] = 0
+	
+	Pair allQuestNames with names=keys and tables=values
+	loop thtough the tables removing all dublicates
+	last index is number of names know and shuould be around 90% of allQuestIds
+	]]
+end
+
 
 -- Above is core, below is the actual libary section interface for other add-ons
 
