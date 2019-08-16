@@ -2,7 +2,7 @@ libQuest = {
 	TITLE = "libQuest",	-- Not codereview friendly but enduser friendly version of the add-on's name
 	AUTHOR = "Ek1",
 	DESCRIPTION = "Libary for other add-on's to get quest data.",
-	VERSION = "1.0",
+	VERSION = "1.0.2.200816",
 	VARIABLEVERSION = "20190710",
 	LIECENSE = "BY-SA = Creative Commons Attribution-ShareAlike 4.0 International License",
 	URL = "https://github.com/Ek1/libQuest"
@@ -11,17 +11,17 @@ local ADDON = "libQuest"	-- Variable used to refer to this add-on. Codereview fr
 
 -- BEFORE_RELEASE turn all following to local.
 -- Table about quest that's questId's are know. The questId works as index and thanks to Lua the missing entrys generate zero memory load.
-allQuestIds = {} --	{questName, QuestRepeatableType = false/1/40, questStarters = {}, questRecipients = {}, zoneIds = {}}
-allQuestIds[0] = 0
+allQuestIds = {}	--	{questName, RepeatableType, questStarters = {}, questRecipients = {}, zoneIds = {}}
+allQuestIds[0] = 0	-- /zgoo allQuestIds
 -- Table to keep track what quests names have multiple questIds
-allQuestNames = {} --	{ {questId} }
-allQuestNames[0] = 0
+allQuestNames = {}	-- { {questId} }
+allQuestNames[0] = 0	-- /zgoo allQuestNames
 -- Table to dublicate journal with corresponding index for outlogged character quest progress info's
-charactersOngoingQuests = {} -- {questName, acceptedTime}
-charactersOngoingQuests[0] = 0
+charactersOngoingQuests = {}	-- {questName, acceptedTime}
+charactersOngoingQuests[0] = 0	-- /zgoo charactersOngoingQuests
 -- Table to keep track when quest was last done
 charactersQuestHistory = {} -- {timestamp}
-charactersQuestHistory[0] = 0
+charactersQuestHistory[0] = 0	-- /zgoo charactersQuestHistory
 
 lastQuestIdRemoved = {}
 -- BEFORE_RELEASE turn all above to local.
@@ -60,12 +60,12 @@ function libQuest.EVENT_QUEST_ADDED(_, addedToJournalIndex, addedQuestName, obje
 --	d( libQuest.TITLE .. ":EVENT_QUEST_ADDED " .. addedQuestName .. "  objectiveName:" .. objectiveName .. " to jouranlIndex " ..  addedToJournalIndex)
 
 --	Updating the journalIndex with the added quest data
-	charactersOngoingQuests[addedToJournalIndex] = {}
-	charactersOngoingQuests[addedToJournalIndex].name = addedQuestName
-	charactersOngoingQuests[addedToJournalIndex].objectiveName = objectiveName
-	charactersOngoingQuests[addedToJournalIndex].acceptedTime = os.time()
-	charactersOngoingQuests[addedToJournalIndex].shareable = GetIsQuestSharable(addedToJournalIndex)
-	charactersOngoingQuests[addedToJournalIndex].repeatable = GetJournalQuestRepeatType(addedToJournalIndex)
+	charactersOngoingQuests[addedQuestName] = {}
+	charactersOngoingQuests[addedQuestName].objectiveName = objectiveName
+	charactersOngoingQuests[addedQuestName].acceptedTime = os.time()
+	charactersOngoingQuests[addedQuestName].shareable = GetIsQuestSharable(addedToJournalIndex)
+	charactersOngoingQuests[addedQuestName].repeatable = GetJournalQuestRepeatType(addedToJournalIndex)
+	charactersOngoingQuests[addedQuestName].journalIndex = addedToJournalIndex
 
 	if not charactersOngoingQuests[0] then
 		charactersOngoingQuests[0] = 1
@@ -113,17 +113,17 @@ function libQuest.EVENT_QUEST_REMOVED (_, isCompleted, journalIndex, questName, 
 	libQuest.setQuestIdToName(questId, questName)
 
 	-- First making sure the charactersOngoingQuests actually has a record of the # journalIndex
-	if charactersOngoingQuests[journalIndex] then
+	if charactersOngoingQuests[questName] then
 		-- If the quest was shareable, then pass that info to the allQuestIds
-		if charactersOngoingQuests[journalIndex].shareable then
-			allQuestIds[questId].shareable = charactersOngoingQuests[journalIndex].shareable
+		if charactersOngoingQuests[questName].shareable then
+			allQuestIds[questId].shareable = charactersOngoingQuests[questName].shareable
 		end
 		-- If the quest was repeatable, then pass that info to the allQuestIds
-		if charactersOngoingQuests[journalIndex].repeatable then
-			allQuestIds[questId].repeatable = charactersOngoingQuests[journalIndex].repeatable
+		if charactersOngoingQuests[questName].repeatable then
+			allQuestIds[questId].repeatable = charactersOngoingQuests[questName].repeatable
 		end
 		-- reseting the journal index
-		charactersOngoingQuests[journalIndex] = nil
+		charactersOngoingQuests[questName] = nil
 	end
 	charactersOngoingQuests[0] = charactersOngoingQuests[0] - 1
 
@@ -182,6 +182,25 @@ function libQuest.Initialize()
 	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_COMPLETE,	libQuest.EVENT_QUEST_COMPLETE)
 	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_REMOVED,	libQuest.EVENT_QUEST_REMOVED)
 
+--[[	if allQuestIds[0] then
+		d (" allQuestIds[0] = " .. allQuestIds[0])
+	else
+		d ("! allQuestIds[0] = nil")
+	end
+
+	if charactersOngoingQuests[0] then
+		d ("charactersOngoingQuests =" .. charactersOngoingQuests[0])
+	else
+		d ("charactersOngoingQuests[0] = nil")
+	end
+
+	if charactersQuestHistory[0] then
+		d ("charactersQuestHistory =" .. charactersQuestHistory[0])
+	else
+		d ("charactersQuestHistory[0] = nil")
+	end
+	]]
+
 	d( libQuest.TITLE .. ": initalization done. Holding data of " .. allQuestIds[0] .. " quests and this characters " .. charactersOngoingQuests[0] .. " ongoing quest with history of " .. charactersQuestHistory[0] .. " quests.")
 end
 
@@ -239,51 +258,92 @@ function libQuest.setQuestIdToName(questId, questName)
 end
 
 -- To fix current characters data
-function libQuest.fixCharacterData()
+function libQuest.fixCharacterData()	-- /script libQuest.fixCharacterData()
 
-	-- Reset charactersOngoingQuests[0] and loop's journalIndex to fix possibly broken record keeping and get back to track
-	charactersOngoingQuests[0] = 0
-	for i=1,25 do	-- Character has maximum of 25s quest active at any given time
-		if GetJournalQuestLevel(i) > 0 then	-- empty journalIndex return's 0
+	-- Can't do hard reset charactersOngoingQuests as it woudl result of losing of metatables and breaking ZO funktions. Loop's journalIndex to fix possibly broken record, change it to name based and get back to track
+	charactersOngoingQuests[0] = 0	-- Zero index is used for counting total active ones.
+	for i=1,25 do	-- Character has maximum of 25 quests active at any given time
+		if GetJournalQuestName(i) ~= "" then	-- empty journalIndex return's ""
 			charactersOngoingQuests[0] = charactersOngoingQuests[0] + 1
-			charactersOngoingQuests[i].name = GetJournalQuestName(i)
-			charactersOngoingQuests[i].shareable = GetIsQuestSharable(i)
-			charactersOngoingQuests[i].repeatable = GetJournalQuestRepeatType(i)
-		else
-			charactersOngoingQuests[i] = nil
+			-- Hit was found so start name based populating
+			local questName = GetJournalQuestName(i)
+			charactersOngoingQuests[questName] = {}
+			charactersOngoingQuests[questName].shareable = GetIsQuestSharable(i)
+			charactersOngoingQuests[questName].repeatable = GetJournalQuestRepeatType(i)
+			charactersOngoingQuests[questName].journalIndex = i
+			d( "LibQuest: charactersOngoingQuests: " .. i .. " " .. questName )
 		end
-	end
+	charactersOngoingQuests[i] = nil	-- Remove the old entry
+	end	-- /zgoo charactersOngoingQuests
 
 	--  Reset charactersQuestHistory[0] and loop's charactersQuestHistory to fix possibly broken record keeping and get back to track
 	local highestQuestId = 6384	-- 100028 had 6384 as highest questId.
 	charactersQuestHistory[0] = 0
-	while i < highestQuestId do
+	for i = 1, highestQuestId do
 		if charactersQuestHistory[i] then
 			charactersQuestHistory[0] = charactersQuestHistory[0] + 1
 		end
 	end
-end
+	d( "LibQuest: charactersQuestHistory: " .. charactersQuestHistory[0])
+end	-- /zgoo charactersQuestHistory
+
+local questIdAndName = {}	-- TEMP
+local fixedAllQuestIds = {}	-- TEMP
 
 -- To fix collected data of quests
-function libQuest.fixCollectedData()
-	--  Reset charactersQuestHistory[0] and loop charactersQuestHistory to fix possibly broken record keeping and get back to track
+function libQuest.fixCollectedData()	-- /script libQuest.fixCollectedData()
+
+	--  Reset allQuestIds[0] and loop allQuestIds to fix possibly broken record keeping and get back to track
 	local highestQuestId = 6384	-- 100028 had 6384 as highest questId.
 	allQuestIds[0] = 0
-	while i < highestQuestId do
+	for i = 1, highestQuestId do
 		if allQuestIds[i] then
 			allQuestIds[0] = allQuestIds[0] + 1
 		end
 	end
---[[ TODO: 
-	-- Reset allQuestNames[0] and loop allQuestNames and allQuestNames[i].questIds
-	allQuestNames[0] = 0
-	
-	Pair allQuestNames with names=keys and tables=values
-	loop thtough the tables removing all dublicates
-	last index is number of names know and shuould be around 90% of allQuestIds
-	]]
-end
 
+	-- Reset allQuestNames[0] and loop trough allQuestNames moving entrys to temp table and then building them back to allQuestIds
+--	allQuestNames[0] = 0
+	
+	for clavem, valorem in pairs(allQuestNames) do
+		if clavem and type(valorem) ~= "table" then
+			d("LibQuest: " .. clavem)
+			for clavemAlium, valoremAlium in pairs(allQuestNames[clavem][valorem]) do
+				questIdAndName[valoremAlium] = clavem
+			end
+		end
+	end	-- questIdAndName is now using questId as index and has most likely several entrys with same questName, thats how it should be
+
+	-- questIdAndName is looped through and now names are used as keys in fixedallQuestNames and the questIds will be fed as values.
+	for clavem, valorem in pairs(questIdAndName) do
+		-- Incase of first empty, create table and create the zero index
+		if not type(fixedallQuestNames[valorem]) == "table" then
+			fixedallQuestNames[valorem] = {}
+			fixedallQuestNames[valorem][0] = 0
+		end
+
+		-- Loop through the table to find either first empty spot to save the questId or find it has already been saved and stop populating this table
+		local i = 1
+		local seekingEmptySpot = true
+		while seekingEmptySpot do
+			if fixedallQuestNames[valorem][i] = nil then
+				fixedallQuestNames[valorem][i] = clavem
+				fixedallQuestNames[valorem][0] = fixedallQuestNames[valorem][0] + 1
+				seekingEmptySpot = false
+			elseif fixedallQuestNames[valorem][i] = clavem then
+				seekingEmptySpot = false
+			else
+				i = i + 1
+			end
+		end
+	end
+	d("LibQuest: fixedallQuestNames should be done, check it out with /zgoo fixedallQuestNames")
+
+	-- TODO: when above works, bring questIdAndName and fixedAllQuestIds inside the function as locals and uncomment following
+	-- allQuestNames = nil
+	-- allQuestNames = {}
+	-- allQuestNames = fixedallQuestNames
+end
 
 -- Above is core, below is the actual libary section interface for other add-ons
 
@@ -302,6 +362,10 @@ end
 
 function getNumberOfQuestIdsKnown()
 	return allQuestIds[0]
+end
+
+function getCharactersLastCompletionOfQuestId(questId)
+	return charactersQuestHistory[QuestId]
 end
 
 -- TODO: offer questId's POI's
