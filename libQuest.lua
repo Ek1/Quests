@@ -2,7 +2,7 @@ libQuest = {
 	TITLE = "libQuest",	-- Not codereview friendly but enduser friendly version of the add-on's name
 	AUTHOR = "Ek1",
 	DESCRIPTION = "Libary for other add-on's to get quest data.",
-	VERSION = "1.0.3.200816.1329",
+	VERSION = "1.0.3.200816.1401",
 	VARIABLEVERSION = "20190710",
 	LIECENSE = "BY-SA = Creative Commons Attribution-ShareAlike 4.0 International License",
 	URL = "https://github.com/Ek1/libQuest"
@@ -263,10 +263,10 @@ function libQuest.fixCharacterData()	-- /script libQuest.fixCharacterData()
 	-- Can't do hard reset charactersOngoingQuests as it woudl result of losing of metatables and breaking ZO funktions. Loop's journalIndex to fix possibly broken record, change it to name based and get back to track
 	charactersOngoingQuests[0] = 0	-- Zero index is used for counting total active ones.
 	for i=1, MAX_JOURNAL_QUESTS do	-- Character has maximum of 25 quests active at any given time
-		if GetJournalQuestName(i) ~= "" then	-- empty journalIndex return's ""
-			-- Hit was found, increase active quest counter by one
+		if GetJournalQuestName(i) ~= "" then	-- empty journalIndex return's "" so if true, entry was found
+			-- increase active quest counter by one
 			charactersOngoingQuests[0] = charactersOngoingQuests[0] + 1
-			-- Hit was found, start name based populating
+			-- start name based populating
 			local questName = GetJournalQuestName(i)
 			charactersOngoingQuests[questName] = {}
 			charactersOngoingQuests[questName].shareable = GetIsQuestSharable(i)
