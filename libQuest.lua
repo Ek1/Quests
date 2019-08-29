@@ -2,7 +2,7 @@ libQuest = {
 	TITLE = "libQuest",	-- Not codereview friendly but enduser friendly version of the add-on's name
 	AUTHOR = "Ek1",
 	DESCRIPTION = "Libary for other add-on's to get quest data.",
-	VERSION = "1.0.3.200816.1401",
+	VERSION = "1.0.3.190829.2335",
 	VARIABLEVERSION = "20190710",
 	LIECENSE = "BY-SA = Creative Commons Attribution-ShareAlike 4.0 International License",
 	URL = "https://github.com/Ek1/libQuest"
@@ -23,7 +23,7 @@ charactersOngoingQuests[0] = 0	-- Keeps track of how many quest are active (non 
 charactersQuestHistory = {} -- {timestamp}
 charactersQuestHistory[0] = 0	-- Keeps track of how many unique quest's are done (sparse table, #charactersQuestHistory wont work)
 
-lastQuestIdRemoved = {}
+local lastQuestIdRemoved = {}
 -- BEFORE_RELEASE turn all above to local.
 
 --[[	Order of the quest events usually firing
@@ -206,8 +206,8 @@ end
 
 -- Variable to keep count how many loads have been done before it was this ones turn.
 local loadOrder = 1
-function libQuest.OnlibQuestLoaded(_, libQuestName)
-	if libQuestName == ADDON then
+function libQuest.OnlibQuestLoaded(_, loadedAddOnName)
+	if loadedAddOnName == ADDON then
 	--	Seems it is our time so lets stop listening load trigger and initialize the add-on
 		d( libQuest.TITLE .. ": load order " ..  loadOrder .. ", starting initalization")
 		EVENT_MANAGER:UnregisterForEvent(ADDON, EVENT_ADD_ON_LOADED)
@@ -338,7 +338,7 @@ function libQuest.fixQuestData()	-- /script libQuest.fixQuestData()
 			end
 		end
 	end
-	d("LibQuest: fixedallQuestNames should be done, check it out with /zgoo fixedallQuestNames")
+	d("LibQuest: fixedallQuestNames should be done, check it out with /zgoo allQuestNames")
 
 	-- TODO: when above works, bring questIdAndName and fixedAllQuestIds inside the function as locals and uncomment following
 	-- allQuestNames = nil
