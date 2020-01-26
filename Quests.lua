@@ -1,13 +1,13 @@
 Quests = {
-	TITLE = "libQuest",	-- Not codereview friendly but enduser friendly version of the add-on's name
+	TITLE = "Quests",	-- Not codereview friendly but enduser friendly version of the add-on's name
 	AUTHOR = "Ek1",
 	DESCRIPTION = "Libary for other add-on's to get quest data.",
-	VERSION = "1.0.3.190829.2335",
+	VERSION = "1.1.190922.0339",
 	VARIABLEVERSION = "20190710",
 	LIECENSE = "BY-SA = Creative Commons Attribution-ShareAlike 4.0 International License",
-	URL = "https://github.com/Ek1/libQuest"
+	URL = "https://github.com/Ek1/Quests"
 }
-local ADDON = "libQuest"	-- Variable used to refer to this add-on. Codereview friendly.
+local ADDON = "Quests"	-- Variable used to refer to this add-on. Codereview friendly.
 
 -- BEFORE_RELEASE turn all following to local.
 -- Table about quest that's questId's are know containing the quest data. The questId works as index and thanks to Lua the missing entrys generate zero memory load.
@@ -36,30 +36,35 @@ local lastQuestIdRemoved = {}
 
 -- Another player sharing a quest
 -- API 100026	EVENT_QUEST_SHARED (number eventCode, number questId)
-function libQuest.EVENT_QUEST_SHARED (_, sharedQuestId)
+function Quests.EVENT_QUEST_SHARED (_, sharedQuestId)
 
 	local questName, characterName, millisecondsSinceRequest, displayName = GetOfferedQuestShareInfo(sharedQuestId)
 
-	libQuest.setNameToQuestId(questName, sharedQuestId)
+	Quests.setNameToQuestId(questName, sharedQuestId)
 	allQuestIds[sharedQuestId].shareable = true
 
-	libQuest.setQuestIdToName(sharedQuestId, questName)
+	Quests.setQuestIdToName(sharedQuestId, questName)
 
---	d( libQuest.TITLE .. ":EVENT_QUEST_SHARED questId:" .. sharedQuestId )
+--	d( Quests.TITLE .. ":EVENT_QUEST_SHARED questId:" .. sharedQuestId )
 end
 
--- NPC offering a quest?
+-- NPC offering a quest
 -- API 100026	EVENT_QUEST_OFFERED (number eventCode)
-function libQuest.EVENT_QUEST_OFFERED (eventCode)
---	d( libQuest.TITLE .. ":EVENT_QUEST_OFFERED eventCode:" .. eventCode )
+function Quests.EVENT_QUEST_OFFERED (eventCode)
+--	d( Quests.TITLE .. ":EVENT_QUEST_OFFERED eventCode:" .. eventCode )
 end
 
 -- New quest gained and its initial info collected
 -- API 100026	EVENT_QUEST_ADDED (number eventCode, number journalIndex, string questName, string objectiveName)
-function libQuest.EVENT_QUEST_ADDED(_, addedToJournalIndex, addedQuestName, objectiveName)
---	d( libQuest.TITLE .. ":EVENT_QUEST_ADDED " .. addedQuestName .. "  objectiveName:" .. objectiveName .. " to jouranlIndex " ..  addedToJournalIndex)
+function Quests.EVENT_QUEST_ADDED(_, addedToJournalIndex, addedQuestName, objectiveName)
+--	d( Quests.TITLE .. ":EVENT_QUEST_ADDED " .. addedQuestName .. "  objectiveName:" .. objectiveName .. " to jouranlIndex " ..  addedToJournalIndex)
 
 --	Updating the journalIndex with the added quest data
+
+	if not charactersOngoingQuests then
+		charactersOngoingQuests = {}
+	end
+
 	charactersOngoingQuests[addedQuestName] = {}
 	charactersOngoingQuests[addedQuestName].objectiveName = objectiveName
 	charactersOngoingQuests[addedQuestName].acceptedTime = os.time()
@@ -78,7 +83,7 @@ end
 
 -- Quest advancing, more info gained and most importantly ZONE info gained
 -- API 100026	EVENT_QUEST_ADVANCED (number eventCode, number journalIndex, string questName, boolean isPushed, boolean isComplete, boolean mainStepChanged)
-function libQuest.EVENT_QUEST_ADVANCED (_, journalIndex, questName, booleanisPushed, booleanisComplete, booleanmainStepChanged)
+function Quests.EVENT_QUEST_ADVANCED (_, journalIndex, questName, booleanisPushed, booleanisComplete, booleanmainStepChanged)
 
 	local questId = getQuestId(questName)
 	local zoneIdWhereAdvanced = GetZoneId(GetUnitZoneIndex("player"))
@@ -102,15 +107,15 @@ function libQuest.EVENT_QUEST_ADVANCED (_, journalIndex, questName, booleanisPus
 			i = i + 1
 		end	-- zoneId saving done
 	end
---	d( libQuest.TITLE .. ":EVENT_QUEST_ADVANCED questName:" .. questName .. " in map " .. zoneIdWhereAdvanced .. " journalIndex:" .. journalIndex  .. " booleanisPushed:" .. tostring(booleanisPushed) )
+--	d( Quests.TITLE .. ":EVENT_QUEST_ADVANCED questName:" .. questName .. " in map " .. zoneIdWhereAdvanced .. " journalIndex:" .. journalIndex  .. " booleanisPushed:" .. tostring(booleanisPushed) )
 end
 
 -- EVENT_QUEST_REMOVED (number eventCode, boolean isCompleted, number journalIndex, string questName, number zoneIndex, number poiIndex, number questId)
-function libQuest.EVENT_QUEST_REMOVED (_, isCompleted, journalIndex, questName, zoneIndex, poiIndex, questId)
+function Quests.EVENT_QUEST_REMOVED (_, isCompleted, journalIndex, questName, zoneIndex, poiIndex, questId)
 	lastQuestIdRemoved = questId
 
-	libQuest.setNameToQuestId(questName, questId)
-	libQuest.setQuestIdToName(questId, questName)
+	Quests.setNameToQuestId(questName, questId)
+	Quests.setQuestIdToName(questId, questName)
 
 	-- First making sure the charactersOngoingQuests actually has a record of the # journalIndex
 	if charactersOngoingQuests[questName] then
@@ -127,12 +132,12 @@ function libQuest.EVENT_QUEST_REMOVED (_, isCompleted, journalIndex, questName, 
 	end
 	charactersOngoingQuests[0] = charactersOngoingQuests[0] - 1
 
---	d( libQuest.TITLE .. ":EVENT_QUEST_REMOVED questName:" .. questName .. " zoneIndex:" .. zoneIndex .. " poiIndex:" .. poiIndex .. " questId:" .. questId .. " in map " .. GetZoneId(GetUnitZoneIndex("player")) .. "  lastQuestIdRemoved:" .. lastQuestIdRemoved)
+--	d( Quests.TITLE .. ":EVENT_QUEST_REMOVED questName:" .. questName .. " zoneIndex:" .. zoneIndex .. " poiIndex:" .. poiIndex .. " questId:" .. questId .. " in map " .. GetZoneId(GetUnitZoneIndex("player")) .. "  lastQuestIdRemoved:" .. lastQuestIdRemoved)
 end -- QuestData was pushed to allQuestIds and allQuestNames
 
 -- This is only called when actually completing a quest, thus gaining the rewards
 -- API 100026	EVENT_QUEST_COMPLETE (number eventCode, string questName, number level, number previousExperience, number currentExperience, number championPoints, QuestType questType, InstanceDisplayType instanceDisplayType)
-function libQuest.EVENT_QUEST_COMPLETE (_, questName, _, _, _, _, questType, _)
+function Quests.EVENT_QUEST_COMPLETE (_, questName, _, _, _, _, questType, _)
 
 	if not charactersQuestHistory[lastQuestIdRemoved] then
 		charactersQuestHistory[0] = charactersQuestHistory[0] + 1
@@ -160,70 +165,71 @@ function libQuest.EVENT_QUEST_COMPLETE (_, questName, _, _, _, _, questType, _)
 		allQuestIds[lastQuestIdRemoved].zones[0] = i
 		i = i + 1
 	end	-- zoneId saving done
---	d( libQuest.TITLE .. ":EVENT_QUEST_COMPLETE questName:" .. questName .. " that was questType:" .. questType .. " in map " .. zoneIdWhereAdvanced .. "  lastQuestIdRemoved:" .. lastQuestIdRemoved)
+--	d( Quests.TITLE .. ":EVENT_QUEST_COMPLETE questName:" .. questName .. " that was questType:" .. questType .. " in map " .. zoneIdWhereAdvanced .. "  lastQuestIdRemoved:" .. lastQuestIdRemoved)
 end
 
 
 -- Lets fire up the add-on by registering for events and loading variables
-function libQuest.Initialize()
+function Quests.Initialize()
 
 	-- Loading account variables i.o. all quest with complete data or if none saved, create one
-	allQuestIds	= libQuest_allQuestIds or {}
-	allQuestNames	= libQuest_allQuestNames or {}
+	allQuestIds		= Quests_allQuestIds
+	allQuestNames	= Quests_allQuestNames
+	Quests_allQuestIds	= allQuestIds
+	Quests_allQuestNames	= allQuestNames
 
 	-- Loading character variables i.o. all incomplete quests
-	charactersQuestHistory	= ZO_SavedVars:NewCharacterIdSettings("libQuest_charactersQuestHistory", libQuest.VARIABLEVERSION, GetWorldName(), charactersQuestHistory) or {}
-	charactersOngoingQuests	= ZO_SavedVars:NewCharacterIdSettings("libQuest_ongoingCharacterQuests", libQuest.VARIABLEVERSION, GetWorldName(), charactersOngoingQuests) or {}
+	charactersQuestHistory	= ZO_SavedVars:NewCharacterIdSettings("Quests_charactersQuestHistory", Quests.VARIABLEVERSION, GetWorldName(), charactersQuestHistory) or {}
+	charactersOngoingQuests	= ZO_SavedVars:NewCharacterIdSettings("Quests_ongoingCharacterQuests", Quests.VARIABLEVERSION, GetWorldName(), charactersOngoingQuests) or {}
 
-	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_SHARED,	libQuest.EVENT_QUEST_SHARED)
-	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_OFFERED,	libQuest.EVENT_QUEST_OFFERED)
-	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_ADDED,	libQuest.EVENT_QUEST_ADDED)
-	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_ADVANCED,	libQuest.EVENT_QUEST_ADVANCED)
-	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_COMPLETE,	libQuest.EVENT_QUEST_COMPLETE)
-	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_REMOVED,	libQuest.EVENT_QUEST_REMOVED)
+	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_SHARED,	Quests.EVENT_QUEST_SHARED)
+	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_OFFERED,	Quests.EVENT_QUEST_OFFERED)
+	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_ADDED,	Quests.EVENT_QUEST_ADDED)
+	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_ADVANCED,	Quests.EVENT_QUEST_ADVANCED)
+	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_COMPLETE,	Quests.EVENT_QUEST_COMPLETE)
+	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_REMOVED,	Quests.EVENT_QUEST_REMOVED)
 
---[[	if allQuestIds[0] then
-		d (" allQuestIds[0] = " .. allQuestIds[0])
-	else
-		d ("! allQuestIds[0] = nil")
+	if not allQuestIds[0] then
+		allQuestIds[0] = 0
 	end
 
-	if charactersOngoingQuests[0] then
-		d ("charactersOngoingQuests =" .. charactersOngoingQuests[0])
-	else
-		d ("charactersOngoingQuests[0] = nil")
+	if not allQuestNames[0] then
+		allQuestNames[0] = 0
 	end
 
-	if charactersQuestHistory[0] then
-		d ("charactersQuestHistory =" .. charactersQuestHistory[0])
-	else
-		d ("charactersQuestHistory[0] = nil")
+	if not charactersOngoingQuests[0] then
+		charactersOngoingQuests[0] = 0
 	end
-	]]
 
-	d( libQuest.TITLE .. ": initalization done. Holding data of " .. allQuestIds[0] .. " quests and this characters " .. charactersOngoingQuests[0] .. " ongoing quest with history of " .. charactersQuestHistory[0] .. " quests.")
+	if not charactersQuestHistory[0] then
+		charactersQuestHistory[0] = 0
+	end
+
+	if allQuestIds[0] and charactersOngoingQuests[0] and charactersQuestHistory[0] then
+		d( Quests.TITLE .. ": initalization done. Holding data of " .. allQuestIds[0] .. " quests and this characters " .. charactersOngoingQuests[0] .. " ongoing quest with history of " .. charactersQuestHistory[0] .. " quests.")
+	end
 end
 
 -- Variable to keep count how many loads have been done before it was this ones turn.
 local loadOrder = 1
-function libQuest.OnlibQuestLoaded(_, loadedAddOnName)
+function Quests.OnQuestsLoaded(_, loadedAddOnName)
 	if loadedAddOnName == ADDON then
 	--	Seems it is our time so lets stop listening load trigger and initialize the add-on
-		d( libQuest.TITLE .. ": load order " ..  loadOrder .. ", starting initalization")
+		d( Quests.TITLE .. ": load order " ..  loadOrder .. ", starting initalization")
 		EVENT_MANAGER:UnregisterForEvent(ADDON, EVENT_ADD_ON_LOADED)
-		libQuest.Initialize()
+		Quests.Initialize()
 	end
 	loadOrder = loadOrder+1
 end
 
--- Registering the libQuest's initializing event when add-on's are loaded 
-EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_ADD_ON_LOADED, libQuest.OnlibQuestLoaded)
+-- Registering the Quests's initializing event when add-on's are loaded 
+EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_ADD_ON_LOADED, Quests.OnQuestsLoaded)
 
 
 --	Set'ters:
 
 --	Fills allQuestIds with a (new) QuestId and its name.
-function libQuest.setNameToQuestId(questName, questId)
+function Quests.setNameToQuestId(questName, questId)
 
 	-- If the index spot is not a table, create one and also increase the tables zero index by one that is keeping track of how many quests we know
 	if type(allQuestIds[questId]) ~= "table" then
@@ -236,7 +242,7 @@ function libQuest.setNameToQuestId(questName, questId)
 end
 
 --	Fills allQuestNames with a new QuestId for a name. Don't feed nils and remember one name can have multiple QuestId's
-function libQuest.setQuestIdToName(questId, questName)
+function Quests.setQuestIdToName(questId, questName)
 	-- First entry? Create a table
 	if type(allQuestNames[questName]) ~= "table" then
 		allQuestNames[questName] = {}
@@ -258,7 +264,7 @@ function libQuest.setQuestIdToName(questId, questName)
 end
 
 -- To fix current characters data
-function libQuest.fixCharacterData()	-- /script libQuest.fixCharacterData()
+function Quests.fixCharacterData()	-- /script Quests.fixCharacterData()
 
 	-- Can't do hard reset charactersOngoingQuests as it woudl result of losing of metatables and breaking ZO funktions. Loop's journalIndex to fix possibly broken record, change it to name based and get back to track
 	charactersOngoingQuests[0] = 0	-- Zero index is used for counting total active ones.
@@ -272,7 +278,7 @@ function libQuest.fixCharacterData()	-- /script libQuest.fixCharacterData()
 			charactersOngoingQuests[questName].shareable = GetIsQuestSharable(i)
 			charactersOngoingQuests[questName].repeatable = GetJournalQuestRepeatType(i)
 			charactersOngoingQuests[questName].journalIndex = i
-			d( "LibQuest: charactersOngoingQuests: " .. i .. " " .. questName )
+			d( "Quests: charactersOngoingQuests: " .. i .. " " .. questName )
 		end
 	charactersOngoingQuests[i] = nil	-- Remove the old entry
 	end	-- /zgoo charactersOngoingQuests
@@ -285,14 +291,14 @@ function libQuest.fixCharacterData()	-- /script libQuest.fixCharacterData()
 			charactersQuestHistory[0] = charactersQuestHistory[0] + 1
 		end
 	end
-	d( "LibQuest: charactersQuestHistory: " .. charactersQuestHistory[0])
+	d( "Quests: charactersQuestHistory: " .. charactersQuestHistory[0])
 end	-- /zgoo charactersQuestHistory	/zgoo allQuestNames
 
 local questIdAndName = {}	-- TEMP
 local fixedAllQuestIds = {}	-- TEMP
 
 -- To fix collected data of quests
-function libQuest.fixQuestData()	-- /script libQuest.fixQuestData()
+function Quests.fixQuestData()	-- /script Quests.fixQuestData()
 
 	--  Reset allQuestIds[0] and loop allQuestIds to fix possibly broken record keeping and get back to track
 	local highestQuestId = 6384	-- 100028 had 6384 as highest questId.
@@ -308,7 +314,7 @@ function libQuest.fixQuestData()	-- /script libQuest.fixQuestData()
 	
 	for clavem, valorem in pairs(allQuestNames) do
 		if type(valorem) ~= "table" then
-			d("LibQuest: " .. clavem)
+			d("Quests: " .. clavem)
 			for clavemAlium, valoremAlium in pairs(allQuestNames[clavem][valorem]) do
 				questIdAndName[valoremAlium] = clavem
 			end
@@ -338,7 +344,7 @@ function libQuest.fixQuestData()	-- /script libQuest.fixQuestData()
 			end
 		end
 	end
-	d("LibQuest: fixedallQuestNames should be done, check it out with /zgoo allQuestNames")
+	d("Quests: fixedallQuestNames should be done, check it out with /zgoo allQuestNames")
 
 	-- TODO: when above works, bring questIdAndName and fixedAllQuestIds inside the function as locals and uncomment following
 	-- allQuestNames = nil
