@@ -1,4 +1,4 @@
-libQuest = {
+Quests = {
 	TITLE = "libQuest",	-- Not codereview friendly but enduser friendly version of the add-on's name
 	AUTHOR = "Ek1",
 	DESCRIPTION = "Libary for other add-on's to get quest data.",
