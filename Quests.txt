@@ -6,4 +6,4 @@
 ## License: BY-SA = Creative Commons Attribution-ShareAlike 4.0 International License
 ## SavedVariables: libQuest_allQuestIds libQuest_allQuestNames libQuest_ongoingCharacterQuests libQuest_charactersQuestHistory
  
-libQuest.lua
+Quests.lua
