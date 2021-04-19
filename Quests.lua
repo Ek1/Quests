@@ -2,9 +2,9 @@ Quests = {
 	TITLE = "Quests",	-- Not codereview friendly but enduser friendly version of the add-on's name
 	AUTHOR = "Ek1",
 	DESCRIPTION = "Libary for other add-on's to get quest data.",
-	VERSION = "1.1.190922.0339",
+	VERSION = "34.210419",
 	VARIABLEVERSION = "20190710",
-	LIECENSE = "BY-SA = Creative Commons Attribution-ShareAlike 4.0 International License",
+	LICENSE = "BY-SA = Creative Commons Attribution-ShareAlike 4.0 International License",
 	URL = "https://github.com/Ek1/Quests"
 }
 local ADDON = "Quests"	-- Variable used to refer to this add-on. Codereview friendly.
@@ -75,7 +75,7 @@ function Quests.EVENT_QUEST_ADDED(_, addedToJournalIndex, addedQuestName, object
 	if not charactersOngoingQuests[0] then
 		charactersOngoingQuests[0] = 1
 	else
-		charactersOngoingQuests[0] = charactersOngoingQuests[0] + 1
+		charactersOngoingQuests[0] = charactersOngoingQuests[0] + 1 or 1
 	end
 	-- GetJournalQuestInfo(number journalQuestIndex)
 	-- Returns: string questName, string backgroundText, string activeStepText, number activeStepType, string activeStepTrackerOverrideText, boolean completed, boolean tracked, number questLevel, boolean pushed, number questType, number InstanceDisplayType instanceDisplayType
@@ -130,9 +130,9 @@ function Quests.EVENT_QUEST_REMOVED (_, isCompleted, journalIndex, questName, zo
 		-- reseting the journal index
 		charactersOngoingQuests[questName] = nil
 	end
-	charactersOngoingQuests[0] = charactersOngoingQuests[0] - 1
+	charactersOngoingQuests[0] = charactersOngoingQuests[0] - 1 or 0
 
---	d( Quests.TITLE .. ":EVENT_QUEST_REMOVED questName:" .. questName .. " zoneIndex:" .. zoneIndex .. " poiIndex:" .. poiIndex .. " questId:" .. questId .. " in map " .. GetZoneId(GetUnitZoneIndex("player")) .. "  lastQuestIdRemoved:" .. lastQuestIdRemoved)
+	d( Quests.TITLE .. ":EVENT_QUEST_REMOVED questName:" .. questName .. " zoneIndex:" .. zoneIndex .. " poiIndex:" .. poiIndex .. " questId:" .. questId .. " in map " .. GetZoneId(GetUnitZoneIndex("player")) .. "  lastQuestIdRemoved:" .. lastQuestIdRemoved)
 end -- QuestData was pushed to allQuestIds and allQuestNames
 
 -- This is only called when actually completing a quest, thus gaining the rewards
@@ -169,72 +169,13 @@ function Quests.EVENT_QUEST_COMPLETE (_, questName, _, _, _, _, questType, _)
 end
 
 
--- Lets fire up the add-on by registering for events and loading variables
-function Quests.Initialize()
-
-	-- Loading account variables i.o. all quest with complete data or if none saved, create one
-	allQuestIds		= Quests_allQuestIds
-	allQuestNames	= Quests_allQuestNames
-	Quests_allQuestIds	= allQuestIds
-	Quests_allQuestNames	= allQuestNames
-
-	-- Loading character variables i.o. all incomplete quests
-	charactersQuestHistory	= ZO_SavedVars:NewCharacterIdSettings("Quests_charactersQuestHistory", Quests.VARIABLEVERSION, GetWorldName(), charactersQuestHistory) or {}
-	charactersOngoingQuests	= ZO_SavedVars:NewCharacterIdSettings("Quests_ongoingCharacterQuests", Quests.VARIABLEVERSION, GetWorldName(), charactersOngoingQuests) or {}
-
-	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_SHARED,	Quests.EVENT_QUEST_SHARED)
-	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_OFFERED,	Quests.EVENT_QUEST_OFFERED)
-	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_ADDED,	Quests.EVENT_QUEST_ADDED)
-	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_ADVANCED,	Quests.EVENT_QUEST_ADVANCED)
-	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_COMPLETE,	Quests.EVENT_QUEST_COMPLETE)
-	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_REMOVED,	Quests.EVENT_QUEST_REMOVED)
-
-	if not allQuestIds[0] then
-		allQuestIds[0] = 0
-	end
-
-	if not allQuestNames[0] then
-		allQuestNames[0] = 0
-	end
-
-	if not charactersOngoingQuests[0] then
-		charactersOngoingQuests[0] = 0
-	end
-
-	if not charactersQuestHistory[0] then
-		charactersQuestHistory[0] = 0
-	end
-
-	if allQuestIds[0] and charactersOngoingQuests[0] and charactersQuestHistory[0] then
-		d( Quests.TITLE .. ": initalization done. Holding data of " .. allQuestIds[0] .. " quests and this characters " .. charactersOngoingQuests[0] .. " ongoing quest with history of " .. charactersQuestHistory[0] .. " quests.")
-	end
-end
-
--- Variable to keep count how many loads have been done before it was this ones turn.
-local loadOrder = 1
-function Quests.OnQuestsLoaded(_, loadedAddOnName)
-	if loadedAddOnName == ADDON then
-	--	Seems it is our time so lets stop listening load trigger and initialize the add-on
-		d( Quests.TITLE .. ": load order " ..  loadOrder .. ", starting initalization")
-		EVENT_MANAGER:UnregisterForEvent(ADDON, EVENT_ADD_ON_LOADED)
-		Quests.Initialize()
-	end
-	loadOrder = loadOrder+1
-end
-
--- Registering the Quests's initializing event when add-on's are loaded 
-EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_ADD_ON_LOADED, Quests.OnQuestsLoaded)
-
-
---	Set'ters:
-
 --	Fills allQuestIds with a (new) QuestId and its name.
 function Quests.setNameToQuestId(questName, questId)
 
 	-- If the index spot is not a table, create one and also increase the tables zero index by one that is keeping track of how many quests we know
 	if type(allQuestIds[questId]) ~= "table" then
 		allQuestIds[questId] = {}
-		allQuestIds[0] = allQuestIds[0]+1
+		allQuestIds[0] = allQuestIds[0]+1 or 1
 	end
 
 	-- Fill the name to the table allQuestIds
@@ -246,7 +187,7 @@ function Quests.setQuestIdToName(questId, questName)
 	-- First entry? Create a table
 	if type(allQuestNames[questName]) ~= "table" then
 		allQuestNames[questName] = {}
-		allQuestNames[0] = allQuestNames[0]+1
+		allQuestNames[0] = allQuestNames[0]+1 or 1
 	end
 
 	local seeking = true
@@ -288,69 +229,11 @@ function Quests.fixCharacterData()	-- /script Quests.fixCharacterData()
 	charactersQuestHistory[0] = 0
 	for i = 1, highestQuestId do
 		if charactersQuestHistory[i] then
-			charactersQuestHistory[0] = charactersQuestHistory[0] + 1
+			charactersQuestHistory[0] = charactersQuestHistory[0] + 1 or 1
 		end
 	end
 	d( "Quests: charactersQuestHistory: " .. charactersQuestHistory[0])
 end	-- /zgoo charactersQuestHistory	/zgoo allQuestNames
-
-local questIdAndName = {}	-- TEMP
-local fixedAllQuestIds = {}	-- TEMP
-
--- To fix collected data of quests
-function Quests.fixQuestData()	-- /script Quests.fixQuestData()
-
-	--  Reset allQuestIds[0] and loop allQuestIds to fix possibly broken record keeping and get back to track
-	local highestQuestId = 6384	-- 100028 had 6384 as highest questId.
-	allQuestIds[0] = 0
-	for i = 1, highestQuestId do
-		if allQuestIds[i] then
-			allQuestIds[0] = allQuestIds[0] + 1
-		end
-	end
-
-	-- Reset allQuestNames[0] and loop trough allQuestNames moving entrys to temp table and then building them back to allQuestIds
-	--	allQuestNames[0] = 0
-	
-	for clavem, valorem in pairs(allQuestNames) do
-		if type(valorem) ~= "table" then
-			d("Quests: " .. clavem)
-			for clavemAlium, valoremAlium in pairs(allQuestNames[clavem][valorem]) do
-				questIdAndName[valoremAlium] = clavem
-			end
-		end
-	end	-- questIdAndName is now using questId as index and has most likely several entrys with same questName, thats how it should be
-
-	-- questIdAndName is looped through and now names are used as keys in fixedallQuestNames and the questIds will be fed as values.
-	for clavem, valorem in pairs(questIdAndName) do
-		-- Incase of first empty, create table and create the zero index
-		if not type(fixedallQuestNames[valorem]) == "table" then
-			fixedallQuestNames[valorem] = {}
-			fixedallQuestNames[valorem][0] = 0
-		end
-
-		-- Loop through the table to find either first empty spot to save the questId or find it has already been saved and stop populating this table
-		local i = 1
-		local seekingEmptySpot = true
-		while seekingEmptySpot do
-			if fixedallQuestNames[valorem][i] == nil then
-				fixedallQuestNames[valorem][i] = clavem
-				fixedallQuestNames[valorem][0] = fixedallQuestNames[valorem][0] + 1
-				seekingEmptySpot = false
-			elseif fixedallQuestNames[valorem][i] == clavem then
-				seekingEmptySpot = false
-			else
-				i = i + 1
-			end
-		end
-	end
-	d("Quests: fixedallQuestNames should be done, check it out with /zgoo allQuestNames")
-
-	-- TODO: when above works, bring questIdAndName and fixedAllQuestIds inside the function as locals and uncomment following
-	-- allQuestNames = nil
-	-- allQuestNames = {}
-	-- allQuestNames = fixedallQuestNames
-end
 
 -- Above is core, below is the actual libary section interface for other add-ons
 
@@ -376,3 +259,48 @@ function getCharactersLastCompletionOfQuestId(questId)
 end
 
 -- TODO: offer questId's POI's
+
+-- Lets fire up the add-on by registering for events and loading variables
+function Quests.Initialize()
+
+	-- Loading character variables i.o. all incomplete quests
+	charactersQuestHistory	= ZO_SavedVars:NewCharacterIdSettings("Quests_charactersQuestHistory", Quests.VARIABLEVERSION, GetWorldName(), charactersQuestHistory) or {}
+	charactersOngoingQuests	= ZO_SavedVars:NewCharacterIdSettings("Quests_ongoingCharacterQuests", Quests.VARIABLEVERSION, GetWorldName(), charactersOngoingQuests) or {}
+
+	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_SHARED,	Quests.EVENT_QUEST_SHARED)
+	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_OFFERED,	Quests.EVENT_QUEST_OFFERED)
+	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_ADDED,	Quests.EVENT_QUEST_ADDED)
+	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_ADVANCED,	Quests.EVENT_QUEST_ADVANCED)
+	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_COMPLETE,	Quests.EVENT_QUEST_COMPLETE)
+	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_REMOVED,	Quests.EVENT_QUEST_REMOVED)
+
+	if allQuestIds[0] == nil then
+		allQuestIds[0] = 0
+	end
+
+	if allQuestNames[0] == nil then
+		allQuestNames[0] = 0
+	end
+
+	if charactersOngoingQuests[0] == nil then
+		charactersOngoingQuests[0] = 0
+	end
+
+	if charactersQuestHistory[0]  == nil then
+		charactersQuestHistory[0] = 0
+	end
+
+	if allQuestIds[0] and charactersOngoingQuests[0] and charactersQuestHistory[0] then
+		d( Quests.TITLE .. ": initalization done. Holding data of " .. allQuestIds[0] .. " quests and this characters " .. charactersOngoingQuests[0] .. " ongoing quest with history of " .. charactersQuestHistory[0] .. " quests.")
+	end
+end
+
+function Quests.OnQuestsLoaded(_, loadedAddOnName)
+	if loadedAddOnName == ADDON then
+	--	Seems it is our time so lets stop listening load trigger and initialize the add-on
+		EVENT_MANAGER:UnregisterForEvent(ADDON, EVENT_ADD_ON_LOADED)
+		Quests.Initialize()
+	end
+end
+-- Registering the Quests's initializing event when add-on's are loaded 
+EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_ADD_ON_LOADED, Quests.OnQuestsLoaded)
