@@ -1,7 +1,7 @@
 ## Title: Quests
-## APIVersion: 100034 100035
+## APIVersion: 100035 100036
 ## IsLibrary: true
-## Version: 34.210410
+## Version: 35.210502
 ## Author: Ek1
 ## License: BY-SA = Creative Commons Attribution-ShareAlike 4.0 International License
 ## SavedVariables: libQuest_allQuestIds libQuest_allQuestNames libQuest_ongoingCharacterQuests libQuest_charactersQuestHistory
