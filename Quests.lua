@@ -2,7 +2,7 @@ Quests = {
 	TITLE = "Quests",	-- Not codereview friendly but enduser friendly version of the add-on's name
 	AUTHOR = "Ek1",
 	DESCRIPTION = "Library for other add-on's to get quest data and to collect it.",
-	VERSION = "35.210502",
+	VERSION = "101031.210827",
 	VARIABLEVERSION = "20190710",
 	LICENSE = "BY-SA = Creative Commons Attribution-ShareAlike 4.0 International License",
 	URL = "https://github.com/Ek1/Quests"
