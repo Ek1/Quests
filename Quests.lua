@@ -2,7 +2,7 @@ Quests = {
 	TITLE = "Quests",	-- Not codereview friendly but enduser friendly version of the add-on's name
 	AUTHOR = "Ek1",
 	DESCRIPTION = "Library for other add-on's to get quest data and to collect it.",
-	VERSION = "101031.210827",
+	VERSION = "1032.211221",
 	VARIABLEVERSION = "20190710",
 	LICENSE = "BY-SA = Creative Commons Attribution-ShareAlike 4.0 International License",
 	URL = "https://github.com/Ek1/Quests"
@@ -88,7 +88,7 @@ function Quests.EVENT_QUEST_ADVANCED (_, journalIndex, questName, booleanisPushe
 	local questId = getQuestId(questName)
 	local zoneIdWhereAdvanced = GetZoneId(GetUnitZoneIndex("player"))
 
-	-- TPrecheck that we actually have the questId
+	-- Precheck that we actually have the questId
 	if type(questId) == "number" then
 		-- The zoneId where the quest takes place is saved
 		if type(allQuestIds[questId].zones) ~= "table" then
@@ -107,8 +107,14 @@ function Quests.EVENT_QUEST_ADVANCED (_, journalIndex, questName, booleanisPushe
 			i = i + 1
 		end	-- zoneId saving done
 	end
---	d( Quests.TITLE .. ":EVENT_QUEST_ADVANCED questName:" .. questName .. " in map " .. zoneIdWhereAdvanced .. " journalIndex:" .. journalIndex  .. " booleanisPushed:" .. tostring(booleanisPushed) )
+--	d( Quests.TITLE .. ":EVENT_QUEST_ADVANCED questName:" .. questName .. " in map " .. zoneIdWhereAdvanced .. " journalIndex:" .. journalIndex  .. " booleanisPushed:" .. tostring(booleanisPushed)  .. " booleanisComplete:" .. tostring(booleanisComplete) .. " booleanmainStepChanged:" .. tostring(booleanmainStepChanged))
 end
+
+-- 100028	EVENT_QUEST_CONDITION_COUNTER_CHANGED (number eventCode, number journalIndex, string questName, string conditionText, number QuestConditionType conditionType, number currConditionVal, number newConditionVal, number conditionMax, boolean isFailCondition, string stepOverrideText, boolean isPushed, boolean isComplete, boolean isConditionComplete, boolean isStepHidden, boolean isConditionCompleteStatusChanged, boolean isConditionCompletableBySiblingStatusChanged)
+function Quests.EVENT_QUEST_CONDITION_COUNTER_CHANGED (_, journalIndex, questName, conditionText, QuestConditionType, currConditionVal, newConditionVal, conditionMax, isFailCondition, stepOverrideText, isPushed, isComplete, isConditionComplete, isStepHidden, isConditionCompleteStatusChanged, isConditionCompletableBySiblingStatusChanged)
+--	d( Quests.TITLE .. ":EVENT_QUEST_CONDITION_COUNTER_CHANGED questName:" .. questName .. " conditionText:" .. conditionText .. " currConditionValues:" .. currConditionVal .. "->" .. newConditionVal .. "/" .. conditionMax .. " isConditionComplete:" .. tostring(isConditionComplete) .. " isComplete:" .. tostring(isComplete) )
+end
+
 
 -- EVENT_QUEST_REMOVED (number eventCode, boolean isCompleted, number journalIndex, string questName, number zoneIndex, number poiIndex, number questId)
 function Quests.EVENT_QUEST_REMOVED (_, isCompleted, journalIndex, questName, zoneIndex, poiIndex, questId)
@@ -132,7 +138,7 @@ function Quests.EVENT_QUEST_REMOVED (_, isCompleted, journalIndex, questName, zo
 	end
 	charactersOngoingQuests[0] = charactersOngoingQuests[0] - 1 or 0
 
-	d( Quests.TITLE .. ":EVENT_QUEST_REMOVED questName:" .. questName .. " zoneIndex:" .. zoneIndex .. " poiIndex:" .. poiIndex .. " questId:" .. questId .. " in map " .. GetZoneId(GetUnitZoneIndex("player")) .. "  lastQuestIdRemoved:" .. lastQuestIdRemoved)
+--	d( Quests.TITLE .. ":EVENT_QUEST_REMOVED questName:" .. questName .. " zoneIndex:" .. zoneIndex .. " poiIndex:" .. poiIndex .. " questId:" .. questId .. " in map " .. GetZoneId(GetUnitZoneIndex("player")) .. "  lastQuestIdRemoved:" .. lastQuestIdRemoved)
 end -- QuestData was pushed to allQuestIds and allQuestNames
 
 -- This is only called when actually completing a quest, thus gaining the rewards
@@ -264,13 +270,14 @@ end
 function Quests.Initialize()
 
 	-- Loading character variables i.o. all incomplete quests
-	charactersQuestHistory	= ZO_SavedVars:NewCharacterIdSettings("Quests_charactersQuestHistory", Quests.VARIABLEVERSION, GetWorldName(), charactersQuestHistory) or {}
-	charactersOngoingQuests	= ZO_SavedVars:NewCharacterIdSettings("Quests_ongoingCharacterQuests", Quests.VARIABLEVERSION, GetWorldName(), charactersOngoingQuests) or {}
+	charactersQuestHistory	= ZO_SavedVars:NewCharacterIdSettings("Quests_charactersQuestHistory", Quests.VARIABLEVERSION, GetWorldName(), charactersQuestHistory or {} ) 
+	charactersOngoingQuests	= ZO_SavedVars:NewCharacterIdSettings("Quests_ongoingCharacterQuests", Quests.VARIABLEVERSION, GetWorldName(), charactersOngoingQuests or {} ) 
 
 	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_SHARED,	Quests.EVENT_QUEST_SHARED)
 	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_OFFERED,	Quests.EVENT_QUEST_OFFERED)
 	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_ADDED,	Quests.EVENT_QUEST_ADDED)
 	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_ADVANCED,	Quests.EVENT_QUEST_ADVANCED)
+	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_CONDITION_COUNTER_CHANGED,	Quests.EVENT_QUEST_CONDITION_COUNTER_CHANGED)
 	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_COMPLETE,	Quests.EVENT_QUEST_COMPLETE)
 	EVENT_MANAGER:RegisterForEvent(ADDON, EVENT_QUEST_REMOVED,	Quests.EVENT_QUEST_REMOVED)
 
