@@ -1,9 +1,9 @@
 ## Title: Quests
-## APIVersion: 101031 101032
+## APIVersion: 101033 101034
 ## IsLibrary: true
-## Version: 101031.210827
+## Version: 1033.220402
 ## Author: Ek1
 ## License: BY-SA = Creative Commons Attribution-ShareAlike 4.0 International License
-## SavedVariables: libQuest_allQuestIds libQuest_allQuestNames libQuest_ongoingCharacterQuests libQuest_charactersQuestHistory libQuests_QuestByRepeatableType
+## SavedVariables: allQuestIds allQuestNames charactersQuestHistory ongoingCharacterQuests
 
 Quests.lua
