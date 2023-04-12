@@ -12,20 +12,20 @@ local ADDON = "Quests"	-- Variable used to refer to this add-on. Codereview frie
 -- BEFORE_RELEASE turn all following to local.
 -- Table about quest that's questId's are know containing the quest data. The questId works as index and thanks to Lua the missing entrys generate zero memory load.
 if not allQuestIds then
-	allQuestIds = {}	--	{questName, RepeatableType, questStarters = {}, questRecipients = {}, zoneIds = {}}
-	allQuestIds[0] = 0	-- Keeps track of how many questId's are known (sparse table, #allQuestIds wont work)
+	local allQuestIds = {}	--	{questName, RepeatableType, questStarters = {}, questRecipients = {}, zoneIds = {}}
+	local allQuestIds[0] = 0	-- Keeps track of how many questId's are known (sparse table, #allQuestIds wont work)
 end
 -- Table to keep track what quests names have multiple questIds
 if not allQuestNames then
-	allQuestNames	= {}	-- { {questId} }
-	allQuestNames[0] = 0	-- Keeps track of how many quest names are known (non integer table, #allQuestNames wont work)
+	local allQuestNames	= {}	-- { {questId} }
+	local allQuestNames[0] = 0	-- Keeps track of how many quest names are known (non integer table, #allQuestNames wont work)
 end
 
 -- Table to dublicate journal with corresponding index for outlogged character quest progress info's and to access quest data on its completion 
-charactersOngoingQuests = {}	-- {questName, acceptedTime}
+local charactersOngoingQuests = {}	-- {questName, acceptedTime}
 -- Table to keep track when quest was last done
-characterQuestHistory = {} -- {timestamp}
-characterQuestHistory[0] = 0	-- Keeps track of how many unique quest's are done (sparse table, #characterQuestHistory wont work)
+local characterQuestHistory = {} -- {timestamp}
+local characterQuestHistory[0] = 0	-- Keeps track of how many unique quest's are done (sparse table, #characterQuestHistory wont work)
 local lastQuestIdRemoved = {}
 -- BEFORE_RELEASE turn all above to local.
 
@@ -192,20 +192,20 @@ end
 --	Fills allQuestNames with a new QuestId for a name. Don't feed nils and remember one name can have multiple QuestId's
 function Quests.setQuestIdToName(questId, questName)
 	if allQuestIds[questId] ~= nil then
-		d("Common: we have already entry number " .. tostring(questId) .. " thus nothing to do.")
+--		d("Common: we have already entry number " .. tostring(questId) .. " thus nothing to do.")
 	elseif type(allQuestNames[questName]) ~= "table" then
-		d (" Rare: 1st entry thus initialize table and populate with the first entry of " .. tostring(questId) )
+--		d (" Rare: 1st entry thus initialize table and populate with the first entry of " .. tostring(questId) )
 		allQuestNames[questName] = {}
 		allQuestNames[questName][1] = questId
 	else
-	d("Uncommon: Whee a new entry " .. tostring(questId) .. "! Lets snuggle it to the right spot for sake of sanity.")
+--	d("Uncommon: Whee a new entry " .. tostring(questId) .. "! Lets snuggle it to the right spot for sake of sanity.")
 	local inOrder = {}
 	local i = 1
 	local lookingForSpot = true
 		while lookingForSpot do
 			if allQuestNames[questName][i] < questId then
 				inOrder[i] = allQuestNames[questName][i]
-				d("allQuestNames[questName][i] < questId " .. tostring(inOrder[ii]) .. tostring(allQuestNames[questName][i]) )
+--				d("allQuestNames[questName][i] < questId " .. tostring(inOrder[ii]) .. tostring(allQuestNames[questName][i]) )
 			elseif questId < allQuestNames[questName][i] then
 				inOrder[i+1] = questId
 				lookingForSpot = false
